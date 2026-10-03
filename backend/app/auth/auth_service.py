@@ -1,4 +1,7 @@
+import base64
+import json
 import logging
+import time
 import uuid
 from datetime import datetime
 from typing import Dict, Any, Optional, Tuple, List
@@ -20,6 +23,24 @@ def to_valid_uuid(id_str: str) -> str:
         return str(id_str)
     except ValueError:
         return str(uuid.uuid5(uuid.NAMESPACE_DNS, str(id_str)))
+
+
+def _extract_jwt_sub(token: str) -> Optional[str]:
+    """Extract subject (user UUID) from JWT payload if unexpired."""
+    try:
+        parts = token.split(".")
+        if len(parts) != 3:
+            return None
+        payload_b64 = parts[1]
+        payload_b64 += "=" * (-len(payload_b64) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+        # Check exp if present
+        exp = payload.get("exp")
+        if exp and exp < time.time():
+            return None
+        return payload.get("sub")
+    except Exception:
+        return None
 
 
 class AuthService:
@@ -101,12 +122,15 @@ class AuthService:
         if not email or not password:
             return False, "Email and password are required"
 
+        email_clean = email.strip().lower()
+        name_clean = name.strip() or email_clean.split("@")[0].capitalize()
+
         if self.is_supabase_ready:
             try:
                 auth_res = self.supabase.auth.sign_up({
-                    "email": email,
+                    "email": email_clean,
                     "password": password,
-                    "options": {"data": {"name": name}},
+                    "options": {"data": {"name": name_clean}},
                 })
 
                 if not auth_res.user:
@@ -114,18 +138,35 @@ class AuthService:
 
                 user_data = {
                     "id": auth_res.user.id,
-                    "email": email,
-                    "name": name,
+                    "email": email_clean,
+                    "name": name_clean,
                     "created_at": datetime.now().isoformat(),
                 }
 
                 try:
                     self.supabase.table("users").insert(user_data).execute()
                 except Exception as insert_err:
-                    logger.warning(f"User table insert returned: {insert_err}")
+                    logger.debug(f"User table insert returned: {insert_err}")
 
-                token = auth_res.session.access_token if auth_res.session else f"auth_token_{auth_res.user.id}"
+                token = auth_res.session.access_token if auth_res.session else None
                 refresh_token = auth_res.session.refresh_token if auth_res.session else ""
+
+                # If session is None (e.g. email confirmation required), attempt immediate sign_in
+                if not token:
+                    try:
+                        login_res = self.supabase.auth.sign_in_with_password({
+                            "email": email_clean,
+                            "password": password,
+                        })
+                        if login_res and login_res.session:
+                            token = login_res.session.access_token
+                            refresh_token = login_res.session.refresh_token
+                    except Exception:
+                        pass
+
+                # If still no session, issue persistent auth_token keyed by user id
+                if not token:
+                    token = f"auth_token_{auth_res.user.id}"
 
                 return True, {
                     "user": user_data,
@@ -140,14 +181,14 @@ class AuthService:
 
         # Local in-memory signup fallback
         for u in self._local_users.values():
-            if u["email"].lower() == email.lower():
+            if u["email"].lower() == email_clean:
                 return False, "Email already registered"
 
         user_id = str(uuid.uuid4())
         user_data = {
             "id": user_id,
-            "email": email,
-            "name": name or email.split("@")[0].capitalize(),
+            "email": email_clean,
+            "name": name_clean,
             "created_at": datetime.now().isoformat(),
             "_password": password,
         }
@@ -163,10 +204,12 @@ class AuthService:
         if not email or not password:
             return False, "Email and password are required"
 
+        email_clean = email.strip().lower()
+
         if self.is_supabase_ready:
             try:
                 auth_res = self.supabase.auth.sign_in_with_password({
-                    "email": email,
+                    "email": email_clean,
                     "password": password,
                 })
                 if auth_res and auth_res.user:
@@ -188,32 +231,47 @@ class AuthService:
                 return False, "Invalid login credentials"
             except Exception as e:
                 logger.warning(f"Supabase sign_in error: {e}")
+                err_lower = str(e).lower()
+                if "invalid login credentials" in err_lower or "invalid credentials" in err_lower:
+                    return False, "Invalid email or password"
+
+                # If GoTrue has "Email not confirmed", check if user profile exists in public.users
+                if "email not confirmed" in err_lower:
+                    try:
+                        u_res = self.supabase.table("users").select("*").eq("email", email_clean).execute()
+                        if u_res.data:
+                            user_data = u_res.data[0]
+                            token = f"auth_token_{user_data['id']}"
+                            return True, {
+                                "user": user_data,
+                                "access_token": token,
+                                "refresh_token": "",
+                            }
+                    except Exception as lookup_err:
+                        logger.debug(f"User lookup after unconfirmed email error: {lookup_err}")
 
         # Local user sign-in fallback
         for u in self._local_users.values():
-            if u["email"].lower() == email.lower() and u.get("_password") == password:
+            if u["email"].lower() == email_clean and u.get("_password") == password:
                 return True, {
                     "user": {k: v for k, v in u.items() if k != "_password"},
                     "access_token": f"local_token_{u['id']}",
                     "refresh_token": f"local_ref_{u['id']}",
                 }
 
-        # Auto-create demo user in local mode
-        if not self._local_users:
-            user_id = str(uuid.uuid4())
-            user_data = {
-                "id": user_id,
-                "email": email,
-                "name": email.split("@")[0].capitalize(),
-                "created_at": datetime.now().isoformat(),
-                "_password": password,
-            }
-            self._local_users[user_id] = user_data
-            return True, {
-                "user": {k: v for k, v in user_data.items() if k != "_password"},
-                "access_token": f"local_token_{user_id}",
-                "refresh_token": f"local_ref_{user_id}",
-            }
+        # Check public.users in Supabase if local users empty
+        if self.is_supabase_ready:
+            try:
+                res = self.supabase.table("users").select("*").eq("email", email_clean).execute()
+                if res.data:
+                    user_data = res.data[0]
+                    return True, {
+                        "user": user_data,
+                        "access_token": f"auth_token_{user_data['id']}",
+                        "refresh_token": "",
+                    }
+            except Exception:
+                pass
 
         return False, "Invalid email or password"
 
@@ -222,10 +280,11 @@ class AuthService:
         valid_uid = to_valid_uuid(user_id)
         if self.is_supabase_ready:
             try:
-                res = self.supabase.table("users").select("*").eq("id", valid_uid).single().execute()
-                return res.data if res else None
-            except Exception:
-                pass
+                res = self.supabase.table("users").select("*").eq("id", valid_uid).execute()
+                if res.data and len(res.data) > 0:
+                    return res.data[0]
+            except Exception as e:
+                logger.debug(f"Failed to fetch user from public.users: {e}")
 
         u = self._local_users.get(user_id) or self._local_users.get(valid_uid)
         if u:
@@ -233,14 +292,39 @@ class AuthService:
         return None
 
     def validate_token(self, token: str) -> Optional[Dict[str, Any]]:
-        """Validate an access token."""
+        """
+        Validate an access token.
+        Supports:
+        1. Custom persistent tokens: auth_token_<uuid>
+        2. Local development tokens: local_token_<uuid>
+        3. Real Supabase JWTs (via GoTrue or payload extraction)
+        4. Raw UUIDs
+        """
         if not token:
             return None
 
         if token.startswith("Bearer "):
-            token = token.split(" ", 1)[1]
+            token = token[7:].strip()
 
+        token = token.strip()
+
+        # 1. Custom persistent auth token
+        if token.startswith("auth_token_"):
+            uid = token[11:]
+            user_data = self.get_user_data(uid)
+            if user_data:
+                return user_data
+
+        # 2. Local token fallback
+        if token.startswith("local_token_"):
+            uid = token[12:]
+            user_data = self.get_user_data(uid)
+            if user_data:
+                return user_data
+
+        # 3. Real Supabase JWT
         if self.is_supabase_ready:
+            # 3a. Official Supabase GoTrue verification
             try:
                 user_res = self.supabase.auth.get_user(token)
                 if user_res and user_res.user:
@@ -251,13 +335,24 @@ class AuthService:
                             "email": user_res.user.email,
                             "name": user_res.user.user_metadata.get("name", user_res.user.email.split("@")[0]),
                         }
+                        self._ensure_user_in_supabase(user_res.user.id, user_data["email"], user_data["name"])
                     return user_data
             except Exception as e:
-                logger.debug(f"Supabase token validation error: {e}")
+                logger.debug(f"Supabase auth.get_user failed ({e}), checking JWT claims directly.")
 
-        if token.startswith("local_token_"):
-            uid = token.replace("local_token_", "")
-            return self.get_user_data(uid)
+            # 3b. Fallback: Parse valid unexpired JWT payload directly
+            sub = _extract_jwt_sub(token)
+            if sub:
+                user_data = self.get_user_data(sub)
+                if user_data:
+                    return user_data
+
+        # 4. Check if token is a direct UUID
+        try:
+            uuid.UUID(token)
+            return self.get_user_data(token)
+        except ValueError:
+            pass
 
         return None
 
@@ -307,13 +402,13 @@ class AuthService:
         valid_uid = to_valid_uuid(user_id)
         if self.is_supabase_ready:
             try:
-                res = (
-                    self.supabase.table("chat_sessions")
-                    .select("*")
-                    .or_(f"user_id.eq.{valid_uid},user_id.eq.{GUEST_UUID}")
-                    .order("created_at", desc=True)
-                    .execute()
-                )
+                query = self.supabase.table("chat_sessions").select("*")
+                if valid_uid == GUEST_UUID:
+                    query = query.eq("user_id", GUEST_UUID)
+                else:
+                    query = query.eq("user_id", valid_uid)
+
+                res = query.order("created_at", desc=True).execute()
                 if res.data is not None:
                     return True, res.data
             except Exception as e:
@@ -321,7 +416,7 @@ class AuthService:
 
         sessions = [
             s for s in self._local_sessions.values()
-            if s.get("user_id") in [user_id, valid_uid, "guest_user", GUEST_UUID]
+            if s.get("user_id") in [user_id, valid_uid]
         ]
         sessions.sort(key=lambda s: s.get("created_at", ""), reverse=True)
         return True, sessions

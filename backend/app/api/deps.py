@@ -17,16 +17,11 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> Dict[str, A
             "name": "Guest User",
         }
 
-    token = authorization
+    token = authorization.strip()
     if token.startswith("Bearer "):
-        token = token[7:]
+        token = token[7:].strip()
 
     user = auth_service.validate_token(token)
-    if not user:
-        if token.startswith("local_token_"):
-            uid = token.replace("local_token_", "")
-            user = auth_service.get_user_data(uid)
-
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

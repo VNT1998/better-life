@@ -1,5 +1,5 @@
 -- ====================================================================
--- Blood Report Analyzer - Supabase Database Schema Initialization
+-- Blood Report Analyzer - Supabase Database Schema & RLS Initialization
 -- ====================================================================
 
 -- 1. Enable required extension for UUID generation
@@ -48,11 +48,140 @@ GRANT ALL ON TABLE public.chat_sessions TO anon, authenticated, service_role;
 GRANT ALL ON TABLE public.chat_messages TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 
--- 8. Row Level Security (RLS) Configuration
--- Disabled by default so anon and authenticated tokens can read/write chat history
-ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.chat_sessions DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.chat_messages DISABLE ROW LEVEL SECURITY;
+-- 8. Auto-Confirm Users in GoTrue (fixes "Email not confirmed" on self-hosted Supabase)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'auth' AND tablename = 'users') THEN
+        UPDATE auth.users 
+        SET email_confirmed_at = COALESCE(email_confirmed_at, NOW()),
+            confirmed_at = COALESCE(confirmed_at, NOW())
+        WHERE email_confirmed_at IS NULL;
+    END IF;
+END $$;
 
--- 9. Refresh PostgREST schema cache immediately
+-- Trigger to auto-confirm any new auth.users signup
+CREATE OR REPLACE FUNCTION public.handle_auto_confirm_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.email_confirmed_at = COALESCE(NEW.email_confirmed_at, NOW());
+    NEW.confirmed_at = COALESCE(NEW.confirmed_at, NOW());
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'auth' AND tablename = 'users') THEN
+        DROP TRIGGER IF EXISTS tr_auto_confirm_user ON auth.users;
+        CREATE TRIGGER tr_auto_confirm_user
+            BEFORE INSERT ON auth.users
+            FOR EACH ROW
+            EXECUTE FUNCTION public.handle_auto_confirm_user();
+    END IF;
+END $$;
+
+-- ====================================================================
+-- 9. Row Level Security (RLS) Configuration
+-- ====================================================================
+
+-- Enable RLS on all tables
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chat_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+
+-- Clean existing policies if any
+DROP POLICY IF EXISTS "Allow select users" ON public.users;
+DROP POLICY IF EXISTS "Allow insert users" ON public.users;
+DROP POLICY IF EXISTS "Allow update users" ON public.users;
+
+DROP POLICY IF EXISTS "Allow select chat_sessions" ON public.chat_sessions;
+DROP POLICY IF EXISTS "Allow insert chat_sessions" ON public.chat_sessions;
+DROP POLICY IF EXISTS "Allow update chat_sessions" ON public.chat_sessions;
+DROP POLICY IF EXISTS "Allow delete chat_sessions" ON public.chat_sessions;
+
+DROP POLICY IF EXISTS "Allow select chat_messages" ON public.chat_messages;
+DROP POLICY IF EXISTS "Allow insert chat_messages" ON public.chat_messages;
+DROP POLICY IF EXISTS "Allow delete chat_messages" ON public.chat_messages;
+
+-- --- Policies for public.users ---
+CREATE POLICY "Allow select users" ON public.users
+    FOR SELECT TO anon, authenticated, service_role
+    USING (true);
+
+CREATE POLICY "Allow insert users" ON public.users
+    FOR INSERT TO anon, authenticated, service_role
+    WITH CHECK (true);
+
+CREATE POLICY "Allow update users" ON public.users
+    FOR UPDATE TO anon, authenticated, service_role
+    USING (auth.uid() = id OR auth.uid() IS NULL);
+
+-- --- Policies for public.chat_sessions ---
+CREATE POLICY "Allow select chat_sessions" ON public.chat_sessions
+    FOR SELECT TO anon, authenticated, service_role
+    USING (
+        auth.uid() = user_id 
+        OR user_id = '00000000-0000-0000-0000-000000000001'
+        OR auth.uid() IS NULL
+    );
+
+CREATE POLICY "Allow insert chat_sessions" ON public.chat_sessions
+    FOR INSERT TO anon, authenticated, service_role
+    WITH CHECK (
+        auth.uid() = user_id 
+        OR user_id = '00000000-0000-0000-0000-000000000001'
+        OR auth.uid() IS NULL
+    );
+
+CREATE POLICY "Allow update chat_sessions" ON public.chat_sessions
+    FOR UPDATE TO anon, authenticated, service_role
+    USING (
+        auth.uid() = user_id 
+        OR user_id = '00000000-0000-0000-0000-000000000001'
+        OR auth.uid() IS NULL
+    );
+
+CREATE POLICY "Allow delete chat_sessions" ON public.chat_sessions
+    FOR DELETE TO anon, authenticated, service_role
+    USING (
+        auth.uid() = user_id 
+        OR user_id = '00000000-0000-0000-0000-000000000001'
+        OR auth.uid() IS NULL
+    );
+
+-- --- Policies for public.chat_messages ---
+CREATE POLICY "Allow select chat_messages" ON public.chat_messages
+    FOR SELECT TO anon, authenticated, service_role
+    USING (
+        auth.uid() IS NULL
+        OR EXISTS (
+            SELECT 1 FROM public.chat_sessions s
+            WHERE s.id = chat_messages.session_id
+            AND (s.user_id = auth.uid() OR s.user_id = '00000000-0000-0000-0000-000000000001')
+        )
+    );
+
+CREATE POLICY "Allow insert chat_messages" ON public.chat_messages
+    FOR INSERT TO anon, authenticated, service_role
+    WITH CHECK (
+        auth.uid() IS NULL
+        OR EXISTS (
+            SELECT 1 FROM public.chat_sessions s
+            WHERE s.id = chat_messages.session_id
+            AND (s.user_id = auth.uid() OR s.user_id = '00000000-0000-0000-0000-000000000001')
+        )
+    );
+
+CREATE POLICY "Allow delete chat_messages" ON public.chat_messages
+    FOR DELETE TO anon, authenticated, service_role
+    USING (
+        auth.uid() IS NULL
+        OR EXISTS (
+            SELECT 1 FROM public.chat_sessions s
+            WHERE s.id = chat_messages.session_id
+            AND (s.user_id = auth.uid() OR s.user_id = '00000000-0000-0000-0000-000000000001')
+        )
+    );
+
+-- 10. Refresh PostgREST schema cache immediately
 NOTIFY pgrst, 'reload schema';
