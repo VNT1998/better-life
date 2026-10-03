@@ -53,8 +53,7 @@ DO $$
 BEGIN
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'auth' AND tablename = 'users') THEN
         UPDATE auth.users 
-        SET email_confirmed_at = COALESCE(email_confirmed_at, NOW()),
-            confirmed_at = COALESCE(confirmed_at, NOW())
+        SET email_confirmed_at = COALESCE(email_confirmed_at, NOW())
         WHERE email_confirmed_at IS NULL;
     END IF;
 END $$;
@@ -64,7 +63,6 @@ CREATE OR REPLACE FUNCTION public.handle_auto_confirm_user()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.email_confirmed_at = COALESCE(NEW.email_confirmed_at, NOW());
-    NEW.confirmed_at = COALESCE(NEW.confirmed_at, NOW());
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
