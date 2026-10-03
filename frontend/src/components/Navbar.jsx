@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Activity, Cpu, LogOut, LogIn, UserCircle, Sparkles, Server } from 'lucide-react';
+import { Activity, LogOut, LogIn, Server } from 'lucide-react';
 
 export default function Navbar({
   selectedModel,
@@ -20,10 +20,10 @@ export default function Navbar({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-bold tracking-tight text-slate-900">
-              HIA
+              BloodReport AI
             </h1>
             <span className="text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full bg-sky-100 text-sky-700">
-              Health Insights
+              Clinical Insights
             </span>
           </div>
           <p className="text-xs text-slate-500 hidden sm:block">

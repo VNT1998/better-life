@@ -5,19 +5,19 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('hia_auth_token'));
+  const [token, setToken] = useState(localStorage.getItem('health_auth_token'));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function initAuth() {
-      const storedToken = localStorage.getItem('hia_auth_token');
+      const storedToken = localStorage.getItem('health_auth_token');
       if (storedToken) {
         try {
           const userData = await api.getMe();
           setUser(userData);
         } catch (err) {
           console.warn('Session expired or invalid token', err);
-          localStorage.removeItem('hia_auth_token');
+          localStorage.removeItem('health_auth_token');
           setToken(null);
           setUser(null);
         }
@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const res = await api.signin(email, password);
     if (res.access_token) {
-      localStorage.setItem('hia_auth_token', res.access_token);
+      localStorage.setItem('health_auth_token', res.access_token);
       setToken(res.access_token);
       setUser(res.user);
     }
@@ -40,7 +40,7 @@ export function AuthProvider({ children }) {
   const signup = async (name, email, password) => {
     const res = await api.signup(name, email, password);
     if (res.access_token) {
-      localStorage.setItem('hia_auth_token', res.access_token);
+      localStorage.setItem('health_auth_token', res.access_token);
       setToken(res.access_token);
       setUser(res.user);
     }
@@ -53,7 +53,7 @@ export function AuthProvider({ children }) {
     } catch (e) {
       // ignore
     }
-    localStorage.removeItem('hia_auth_token');
+    localStorage.removeItem('health_auth_token');
     setToken(null);
     setUser(null);
   };

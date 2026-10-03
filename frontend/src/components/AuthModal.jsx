@@ -55,7 +55,7 @@ export default function AuthModal({ onClose }) {
     setLoading(true);
     setError('');
     try {
-      await login('demo@hia.health', 'password123');
+      await login('demo@health.local', 'password123');
       if (onClose) onClose();
     } catch (err) {
       setError(err.message || 'Demo login failed');
@@ -73,11 +73,11 @@ export default function AuthModal({ onClose }) {
             <Activity className="w-6 h-6 text-white animate-pulse" />
           </div>
           <h2 className="text-2xl font-bold tracking-tight">
-            {isLogin ? 'Welcome Back to HIA' : 'Create an Account'}
+            {isLogin ? 'Welcome Back' : 'Create an Account'}
           </h2>
           <p className="text-sky-100 text-sm mt-1">
             {isLogin
-              ? 'Sign in to access your personal health analysis sessions'
+              ? 'Sign in to access your blood report analysis sessions'
               : 'Start analyzing medical blood reports with advanced AI'}
           </p>
         </div>

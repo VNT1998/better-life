@@ -1,30 +1,30 @@
-# 🩺 HIA (Health Insights Agent)
+# 🩺 Blood Report Analyzer
 
-AI Agent to analyze blood reports and provide detailed health insights, built with **React (Vite)**, **FastAPI (uv)**, and self-hosted **Ollama**.
+AI-powered medical blood report analysis and follow-up clinical Q&A, built with **React (Vite)**, **FastAPI (uv)**, and self-hosted **Ollama**.
 
-<p align="center">
-  <img src="public/HIA_demo.gif" alt="HIA Demo" width="700" />
-</p>
+---
 
-## 🌟 Key Highlights & Features
+## 🌟 Key Features
 
 - **Self-Hosted AI Models (Zero External Model APIs)**:
-  - Direct inference using your self-hosted Ollama server (`https://ollama.calmalpha.in/`).
+  - Direct local/private inference via your Ollama endpoint: `https://ollama.calmalpha.in/`.
   - Supported models: `gemma4:e4b`, `phi4-mini:latest`, `granite4.1:3b`, `qwen3.5:4b-mlx`.
-  - Multi-model automatic fallback cascade.
-- **Modern React Frontend (Vite + Tailwind CSS)**:
-  - Fast, responsive user interface with drag-and-drop PDF upload or instant sample blood report testing.
-  - Interactive diagnosis dashboard with markdown formatting, risks, and recommendations.
+  - Multi-tier automatic fallback cascade.
+- **Modern React Frontend (`frontend/`)**:
+  - Scaffolded with Vite and styled with Tailwind CSS.
+  - Drag-and-drop PDF report upload with validation, or instant testing with preloaded sample report.
+  - Structured clinical diagnosis view with risk levels, lifestyle recommendations, and follow-up testing guidance.
   - Interactive follow-up Q&A chat powered by Ollama.
-- **FastAPI Backend (managed with `uv`)**:
-  - Blazingly fast asynchronous API endpoints for authentication, sessions, PDF extraction, analysis, and chat.
+- **Dedicated Backend Service (`backend/`)**:
+  - FastAPI application managed with `uv`.
+  - Asynchronous endpoints for authentication, sessions, PDF extraction, report analysis, and chat.
 - **Authentication & Persistence (Supabase)**:
-  - User sign up, sign in, token authentication, and session persistence in Supabase PostgreSQL tables.
-  - Automatic local in-memory fallback for rapid local development without mandatory cloud configuration.
-- **PDF Extraction & Validation**:
+  - User sign up, sign in, and chat history persistence across Supabase PostgreSQL tables.
+  - Local in-memory fallback store enabled automatically if Supabase credentials are not provided.
+- **PDF Extraction**:
   - Text extraction via `pdfplumber` with medical content validation and size limits (max 20MB, max 50 pages).
-- **Daily Analysis Limit**:
-  - Configurable daily limit (default 15/day) with progress indicators.
+- **Daily Usage Limits**:
+  - Configurable daily analysis quota with progress tracking.
 
 ---
 
@@ -33,12 +33,12 @@ AI Agent to analyze blood reports and provide detailed health insights, built wi
 - **Frontend**: React 19, Vite, Tailwind CSS v4, Lucide React, React Markdown
 - **Backend**: FastAPI, Uvicorn, Python 3.12+ (managed with `uv`)
 - **AI / LLM**: Self-hosted Ollama (`https://ollama.calmalpha.in/`)
-- **Database / Auth**: Supabase (PostgreSQL) / Gotrue with local fallback
+- **Database / Auth**: Supabase (PostgreSQL) / Gotrue with local dev fallback
 - **PDF Engine**: PDFPlumber, filetype
 
 ---
 
-## 🚀 Quick Start Guide
+## 🚀 Getting Started
 
 ### 1. Requirements
 
@@ -47,13 +47,13 @@ AI Agent to analyze blood reports and provide detailed health insights, built wi
 
 ### 2. Environment Setup
 
-Copy `.env.example` to `.env`:
+Copy `.env.example` in `backend/` to `.env`:
 
 ```bash
-cp .env.example .env
+cp backend/.env.example backend/.env
 ```
 
-Configure your `.env` settings:
+Environment variables:
 ```env
 OLLAMA_BASE_URL=https://ollama.calmalpha.in/
 OLLAMA_PRIMARY_MODEL=gemma4:e4b
@@ -64,32 +64,34 @@ SUPABASE_URL=your-supabase-url
 SUPABASE_KEY=your-supabase-key
 ```
 
-### 3. Install Dependencies
+### 3. Installation
 
-**Python Backend** (using `uv`):
+**Backend** (using `uv`):
 ```bash
+cd backend
 uv venv
 uv pip install -r requirements.txt
+cd ..
 ```
 
-**React Frontend** (using `npm`):
+**Frontend** (using `npm`):
 ```bash
 cd frontend
 npm install
 cd ..
 ```
 
-### 4. Running the Application
+### 4. Running the Development Servers
 
-**Option A: Development Mode (with hot-reloading)**
+Start the backend and frontend development servers:
 
-1. Start the FastAPI backend:
+**Backend (FastAPI on http://localhost:8000)**:
 ```bash
 npm run dev:backend
-# or: PYTHONPATH=src uv run uvicorn main:app --reload --port 8000
+# or: cd backend && uv run uvicorn app.main:app --reload --port 8000
 ```
 
-2. Start the Vite React frontend:
+**Frontend (Vite on http://localhost:5173)**:
 ```bash
 npm run dev:frontend
 # or: cd frontend && npm run dev
@@ -99,9 +101,9 @@ Visit **`http://localhost:5173`** in your browser.
 
 ---
 
-**Option B: Full-Stack Production Mode**
+### 5. (Optional) Full-Stack Production Mode
 
-Build the frontend and serve everything directly from FastAPI:
+Build the React frontend and serve both backend and frontend from FastAPI:
 ```bash
 npm run build
 npm run start
@@ -114,48 +116,57 @@ Visit **`http://localhost:8000`** in your browser.
 
 ```
 blood-report-analysis/
-├── frontend/                   # React + Vite Frontend
+├── backend/                    # Dedicated Python Backend Project
+│   ├── app/
+│   │   ├── api/                # API Routers
+│   │   │   ├── auth.py         # Authentication (sign in, sign up, session check)
+│   │   │   ├── sessions.py     # Chat sessions management
+│   │   │   ├── analysis.py     # PDF extraction & report analysis
+│   │   │   ├── chat.py         # Follow-up Q&A
+│   │   │   ├── models.py       # Ollama models list & configuration
+│   │   │   └── deps.py         # Auth & service dependencies
+│   │   ├── agents/
+│   │   │   ├── model_manager.py # Ollama client with multi-model fallback
+│   │   │   ├── analysis_agent.py # Medical analysis agent
+│   │   │   └── chat_agent.py   # RAG follow-up agent
+│   │   ├── auth/
+│   │   │   └── auth_service.py # Supabase auth & local in-memory fallback
+│   │   ├── services/
+│   │   │   └── ai_service.py   # AI service orchestrator
+│   │   ├── utils/
+│   │   │   ├── pdf_extractor.py # PDF text extraction
+│   │   │   └── validators.py   # Input & medical report validators
+│   │   ├── config.py           # Configuration & settings
+│   │   ├── prompts.py          # Clinical specialist prompts
+│   │   ├── sample_data.py      # Preloaded sample blood report
+│   │   └── main.py             # FastAPI entrypoint
+│   ├── requirements.txt        # Backend dependencies
+│   ├── pyproject.toml          # uv/hatchling project configuration
+│   └── README.md
+├── frontend/                   # React + Vite Frontend Project
 │   ├── src/
-│   │   ├── api/client.js       # Backend API client
-│   │   ├── context/AuthContext.jsx # Authentication state
+│   │   ├── api/client.js       # REST API client
+│   │   ├── context/AuthContext.jsx # Auth state management
 │   │   ├── components/
-│   │   │   ├── Navbar.jsx      # Navigation, model selector, user status
+│   │   │   ├── Navbar.jsx      # Header, model selector, user status
 │   │   │   ├── Sidebar.jsx     # Session history, new session, limits
 │   │   │   ├── AnalysisForm.jsx # PDF upload / sample report form
-│   │   │   ├── ChatView.jsx    # Chat thread, report analysis, follow-up Q&A
+│   │   │   ├── ChatView.jsx    # Clinical findings, diagnosis, follow-up Q&A
 │   │   │   ├── WelcomeView.jsx # Welcome hero screen
 │   │   │   └── AuthModal.jsx   # Login & register modal
-│   │   ├── App.jsx             # Main React application
+│   │   ├── App.jsx             # Main application layout
 │   │   └── index.css           # Tailwind CSS styles
-│   └── vite.config.js          # Vite config with API proxy
-├── src/                        # FastAPI Backend
-│   ├── api/                    # API Routers
-│   │   ├── auth.py             # User signup, login, session validation
-│   │   ├── sessions.py         # Chat sessions CRUD
-│   │   ├── analysis.py         # PDF extraction & blood report analysis
-│   │   ├── chat.py             # Follow-up RAG Q&A
-│   │   └── models.py           # Ollama model discovery and app config
-│   ├── agents/
-│   │   ├── model_manager.py    # Ollama inference & fallback manager
-│   │   ├── analysis_agent.py   # Medical analysis & in-context learning
-│   │   └── chat_agent.py       # Follow-up Q&A agent
-│   ├── auth/
-│   │   └── auth_service.py     # Supabase auth & local in-memory fallback
-│   ├── services/
-│   │   └── ai_service.py       # High-level AI service layer
-│   ├── utils/
-│   │   ├── pdf_extractor.py    # PDF text extraction
-│   │   └── validators.py       # Content and input validators
-│   ├── config/
-│   │   ├── app_config.py       # Settings & environment variables
-│   │   ├── prompts.py          # Specialist medical prompts
-│   │   └── sample_data.py      # Preloaded sample report
-│   └── main.py                 # FastAPI app entrypoint
-├── requirements.txt            # Python dependencies (managed via uv)
-├── package.json                # Root helper scripts
+│   ├── package.json
+│   └── vite.config.js          # Vite configuration with API proxy
+├── public/
+│   └── db/
+│       ├── script.sql          # Supabase database schema
+│       └── schema.png          # Database schema diagram
+├── package.json                # Root workflow scripts
+├── .env.example                # Example environment variables
 └── README.md
 ```
 
 ## 🔒 Database Setup (Supabase)
 
-If using Supabase, execute `public/db/script.sql` in your Supabase SQL Editor to create the required tables (`users`, `chat_sessions`, and `chat_messages`).
+If connecting to Supabase, run `public/db/script.sql` in your Supabase SQL Editor to initialize the `users`, `chat_sessions`, and `chat_messages` tables.

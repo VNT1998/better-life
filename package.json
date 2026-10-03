@@ -1,13 +1,13 @@
 {
-  "name": "hia",
+  "name": "blood-report-analysis",
   "version": "2.0.0",
-  "description": "Health Insights Agent - Blood Report Analysis with Ollama and React",
+  "description": "Blood Report Analyzer with React, FastAPI, and self-hosted Ollama",
   "scripts": {
-    "dev:backend": "PYTHONPATH=src uv run uvicorn main:app --reload --port 8000",
+    "dev:backend": "cd backend && uv run uvicorn app.main:app --reload --port 8000",
     "dev:frontend": "npm --prefix frontend run dev",
     "build:frontend": "npm --prefix frontend run build",
     "build": "npm --prefix frontend run build",
-    "start": "PYTHONPATH=src uv run uvicorn main:app --port 8000",
+    "start": "cd backend && uv run uvicorn app.main:app --port 8000",
     "dev": "npm run dev:backend"
   }
 }

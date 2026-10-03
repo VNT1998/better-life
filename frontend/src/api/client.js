@@ -1,7 +1,7 @@
 const API_BASE = '/api';
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('hia_auth_token');
+  const token = localStorage.getItem('health_auth_token');
   const headers = { 'Content-Type': 'application/json' };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -97,7 +97,7 @@ export const api = {
   async extractPdf(file) {
     const formData = new FormData();
     formData.append('file', file);
-    const token = localStorage.getItem('hia_auth_token');
+    const token = localStorage.getItem('health_auth_token');
     const headers = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
