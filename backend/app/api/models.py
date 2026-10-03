@@ -42,6 +42,8 @@ def get_config(user: Dict[str, Any] = Depends(get_current_user)):
         "daily_limit": ANALYSIS_DAILY_LIMIT,
         "remaining_limit": remaining,
         "is_supabase_connected": auth_service.is_supabase_ready,
+        "supabase_status": auth_service.supabase_status,
+        "supabase_error": auth_service.supabase_error,
         "ollama_endpoint": OLLAMA_BASE_URL,
         "primary_model": OLLAMA_PRIMARY_MODEL,
     }

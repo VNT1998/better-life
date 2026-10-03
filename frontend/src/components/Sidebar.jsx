@@ -20,6 +20,7 @@ export default function Sidebar({
   remainingLimit = 15,
   dailyLimit = 15,
   isSupabaseConnected = false,
+  supabaseStatus = null,
   isOpen = true,
   onClose,
 }) {
@@ -162,10 +163,17 @@ export default function Sidebar({
       <div className="p-3 border-t border-slate-100 text-[11px] text-slate-500 bg-slate-50/50 space-y-1.5">
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Auth & DB
+            <ShieldCheck className={`w-3.5 h-3.5 ${isSupabaseConnected ? 'text-emerald-500' : 'text-amber-500'}`} /> Auth & DB
           </span>
-          <span className="font-medium text-slate-700">
-            {isSupabaseConnected ? 'Supabase' : 'Local Mode'}
+          <span
+            title={supabaseStatus ? `Status: ${supabaseStatus}` : undefined}
+            className={`font-medium ${isSupabaseConnected ? 'text-slate-700' : 'text-amber-700'}`}
+          >
+            {isSupabaseConnected
+              ? 'Supabase'
+              : supabaseStatus && supabaseStatus.startsWith('unreachable')
+              ? 'Local (DB offline)'
+              : 'Local Mode'}
           </span>
         </div>
         <div className="flex items-center justify-between">

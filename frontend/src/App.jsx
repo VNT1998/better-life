@@ -113,6 +113,7 @@ function MainApp() {
           remainingLimit={config?.remaining_limit ?? 15}
           dailyLimit={config?.daily_limit ?? 15}
           isSupabaseConnected={config?.is_supabase_connected ?? false}
+          supabaseStatus={config?.supabase_status}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
