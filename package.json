@@ -1,0 +1,13 @@
+{
+  "name": "hia",
+  "version": "2.0.0",
+  "description": "Health Insights Agent - Blood Report Analysis with Ollama and React",
+  "scripts": {
+    "dev:backend": "PYTHONPATH=src uv run uvicorn main:app --reload --port 8000",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "build": "npm --prefix frontend run build",
+    "start": "PYTHONPATH=src uv run uvicorn main:app --port 8000",
+    "dev": "npm run dev:backend"
+  }
+}
