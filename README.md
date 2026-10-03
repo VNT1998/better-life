@@ -1,6 +1,6 @@
-# 🩺 Blood Report Analyzer
+# 🌱 BetterLife
 
-AI-powered medical blood report analysis and follow-up clinical Q&A, built with **React (Vite)**, **FastAPI (uv)**, and self-hosted **Ollama**.
+AI-powered health intelligence and laboratory blood report analysis with interactive clinical follow-up Q&A, built with **React (Vite)**, **FastAPI (uv)**, and self-hosted **Ollama**.
 
 ---
 
@@ -115,7 +115,7 @@ Visit **`http://localhost:8000`** in your browser.
 ## 📁 Project Structure
 
 ```
-blood-report-analysis/
+betterlife/
 ├── backend/                    # Dedicated Python Backend Project
 │   ├── app/
 │   │   ├── api/                # API Routers

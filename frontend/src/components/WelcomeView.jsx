@@ -21,18 +21,18 @@ export default function WelcomeView({ onCreateSession, onSelectSample }) {
 
         {/* Title */}
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-semibold tracking-wide uppercase">
-            <Sparkles className="w-3.5 h-3.5 text-sky-600" />
-            <span>AI-Powered Diagnostics</span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold tracking-wide uppercase">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+            <span>AI-Powered Health Intelligence</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Health Insights Agent
+            BetterLife AI
           </h2>
           <p className="text-base text-slate-600 font-medium">
-            Discover a Healthier You with AI
+            Discover a Better, Healthier You with AI
           </p>
           <p className="text-sm text-slate-500 max-w-lg mx-auto">
-            Upload laboratory blood tests or use our comprehensive sample report. Get immediate AI-generated risk evaluations, lifestyle recommendations, and interactive follow-up Q&A.
+            Upload your laboratory blood tests or use our comprehensive sample report. Get immediate AI-generated risk evaluations, lifestyle recommendations, and interactive clinical follow-up Q&A.
           </p>
         </div>
 

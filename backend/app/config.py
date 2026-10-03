@@ -3,10 +3,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-APP_NAME = "Blood Report Analyzer"
-APP_DESCRIPTION = "Comprehensive AI-Powered Blood Report and Laboratory Health Insights"
-APP_ICON = "🩺"
-APP_TAGLINE = "Discover a Healthier You with AI"
+APP_NAME = "BetterLife"
+APP_DESCRIPTION = "BetterLife - Comprehensive AI-Powered Blood Report & Health Insights"
+APP_ICON = "🌱"
+APP_TAGLINE = "Discover a Better, Healthier You with AI"
 
 # App settings
 MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", "20"))

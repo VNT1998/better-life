@@ -101,7 +101,7 @@ class AuthService:
             self.is_supabase_ready = False
             logger.error(f"Failed to create Supabase client: {e}. Falling back to local storage.")
 
-    def _ensure_user_in_supabase(self, user_id: str, email: str = "guest@bloodanalysis.local", name: str = "Guest User"):
+    def _ensure_user_in_supabase(self, user_id: str, email: str = "guest@betterlife.local", name: str = "Guest User"):
         """Ensure a user record exists in the public users table to satisfy foreign keys."""
         if not self.is_supabase_ready or not self.supabase:
             return

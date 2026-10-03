@@ -1,7 +1,7 @@
 [project]
-name = "blood-report-backend"
+name = "betterlife-backend"
 version = "2.0.0"
-description = "FastAPI backend for Blood Report Analyzer with self-hosted Ollama and Supabase"
+description = "FastAPI backend for BetterLife AI Health & Blood Report Analyzer with self-hosted Ollama and Supabase"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

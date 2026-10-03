@@ -1,5 +1,5 @@
 -- ====================================================================
--- Blood Report Analyzer - Supabase Database Schema & RLS Initialization
+-- BetterLife - Supabase Database Schema & RLS Initialization
 -- ====================================================================
 
 -- 1. Enable required extension for UUID generation
@@ -38,7 +38,7 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON public.chat_messages(
 
 -- 6. Insert Default Guest User (satisfies foreign key constraints for guest / unauthenticated sessions)
 INSERT INTO public.users (id, email, name)
-VALUES ('00000000-0000-0000-0000-000000000001', 'guest@bloodanalysis.local', 'Guest User')
+VALUES ('00000000-0000-0000-0000-000000000001', 'guest@betterlife.local', 'Guest User')
 ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email;
 
 -- 7. Grant Permissions to Supabase API roles (anon, authenticated, service_role)

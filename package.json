@@ -1,7 +1,7 @@
 {
-  "name": "blood-report-analysis",
+  "name": "betterlife",
   "version": "2.0.0",
-  "description": "Blood Report Analyzer with React, FastAPI, and self-hosted Ollama",
+  "description": "BetterLife - AI Health & Blood Report Analyzer with React, FastAPI, and self-hosted Ollama",
   "scripts": {
     "dev:backend": "cd backend && uv run uvicorn app.main:app --reload --port 8000",
     "dev:frontend": "npm --prefix frontend run dev",

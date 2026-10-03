@@ -1,6 +1,6 @@
-# Blood Report Analyzer - Backend
+# BetterLife - Backend
 
-FastAPI backend providing blood report analysis, PDF text extraction, and follow-up medical Q&A powered by self-hosted Ollama (`https://ollama.calmalpha.in/`) and Supabase Authentication.
+FastAPI backend providing AI-driven health and blood report analysis, PDF text extraction, and follow-up clinical Q&A powered by self-hosted Ollama (`https://ollama.calmalpha.in/`) and Supabase Authentication.
 
 ## Running
 

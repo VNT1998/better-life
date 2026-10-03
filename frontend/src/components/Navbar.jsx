@@ -20,14 +20,14 @@ export default function Navbar({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-bold tracking-tight text-slate-900">
-              BloodReport AI
+              BetterLife
             </h1>
-            <span className="text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full bg-sky-100 text-sky-700">
-              Clinical Insights
+            <span className="text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+              Health AI
             </span>
           </div>
           <p className="text-xs text-slate-500 hidden sm:block">
-            Discover a Healthier You with AI
+            Discover a Better, Healthier You with AI
           </p>
         </div>
       </div>

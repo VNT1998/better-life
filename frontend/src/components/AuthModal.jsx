@@ -73,11 +73,11 @@ export default function AuthModal({ onClose }) {
             <Activity className="w-6 h-6 text-white animate-pulse" />
           </div>
           <h2 className="text-2xl font-bold tracking-tight">
-            {isLogin ? 'Welcome Back' : 'Create an Account'}
+            {isLogin ? 'Welcome to BetterLife' : 'Join BetterLife'}
           </h2>
           <p className="text-sky-100 text-sm mt-1">
             {isLogin
-              ? 'Sign in to access your blood report analysis sessions'
+              ? 'Sign in to access your BetterLife health analysis sessions'
               : 'Start analyzing medical blood reports with advanced AI'}
           </p>
         </div>

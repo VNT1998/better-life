@@ -13,7 +13,7 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> Dict[str, A
         # Default guest identity with valid UUID for instant development/testing
         return {
             "id": GUEST_UUID,
-            "email": "guest@bloodanalysis.local",
+            "email": "guest@betterlife.local",
             "name": "Guest User",
         }
 
