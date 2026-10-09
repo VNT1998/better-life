@@ -10,6 +10,12 @@ from app.api.sessions import router as sessions_router
 from app.api.analysis import router as analysis_router
 from app.api.chat import router as chat_router
 from app.api.models import router as models_router
+from app.api.clinical_documents import router as documents_router
+from app.api.clinical_patients import router as patients_router
+from app.api.clinical_knowledge_bases import router as kb_router
+from app.api.clinical_analyses import router as analyses_router
+from app.api.clinical_audit import router as audit_router
+from app.db.init_db import init_db
 from app.config import APP_NAME, APP_TAGLINE, APP_DESCRIPTION
 
 app = FastAPI(
@@ -17,6 +23,11 @@ app = FastAPI(
     description=APP_DESCRIPTION,
     version="2.0.0",
 )
+
+# Initialize database on startup
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
 # CORS configuration
 app.add_middleware(
@@ -27,12 +38,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include API routers under /api
+# Include existing API routers under /api
 app.include_router(auth_router, prefix="/api")
 app.include_router(sessions_router, prefix="/api")
 app.include_router(analysis_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
 app.include_router(models_router, prefix="/api")
+
+# Include Clinical Evidence Intelligence API routers under /api
+app.include_router(documents_router, prefix="/api")
+app.include_router(patients_router, prefix="/api")
+app.include_router(kb_router, prefix="/api")
+app.include_router(analyses_router, prefix="/api")
+app.include_router(audit_router, prefix="/api")
 
 
 @app.get("/api/health")

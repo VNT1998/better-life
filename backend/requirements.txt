@@ -9,3 +9,6 @@ gotrue>=2.9.0
 pdfplumber>=0.11.5
 filetype>=1.2.0
 langchain-text-splitters>=0.2.0
+sqlalchemy>=2.0.0
+pytest>=8.0.0
+pytest-asyncio>=0.23.0

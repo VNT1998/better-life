@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # ========================================================
+  # 1. PostgreSQL with pgvector extension
+  # ========================================================
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: betterlife-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: betterlife
+      POSTGRES_PASSWORD: betterlife_secret_password
+      POSTGRES_DB: betterlife
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U betterlife"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ========================================================
+  # 2. Redis Caching & Queue
+  # ========================================================
+  redis:
+    image: redis:7-alpine
+    container_name: betterlife-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ========================================================
+  # 3. FastAPI Backend
+  # ========================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: betterlife-backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://betterlife:betterlife_secret_password@postgres:5432/betterlife
+      - REDIS_URL=redis://redis:6379/0
+      - OLLAMA_BASE_URL=https://ollama.calmalpha.in/
+      - OLLAMA_PRIMARY_MODEL=gemma4:e4b
+      - OLLAMA_FALLBACK_MODELS=phi4-mini:latest,granite4.1:3b,qwen3.5:4b-mlx
+      - PORT=8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/data:/app/data
+
+  # ========================================================
+  # 4. React Frontend
+  # ========================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: betterlife-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:

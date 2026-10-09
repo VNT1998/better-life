@@ -44,6 +44,9 @@ log/
 # Local development
 .temp*
 *.temp.txt
+*.db
+*.sqlite
+*.sqlite3
 .coverage
 htmlcov/
 .pytest_cache/

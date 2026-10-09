@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar';
 import WelcomeView from './components/WelcomeView';
 import ChatView from './components/ChatView';
 import AuthModal from './components/AuthModal';
+import ClinicalWorkspace from './components/ClinicalWorkspace';
 
 function MainApp() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -16,6 +17,7 @@ function MainApp() {
   const [config, setConfig] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [appMode, setAppMode] = useState('clinical'); // 'clinical' or 'chat'
 
   // Load configuration and models
   useEffect(() => {
@@ -101,38 +103,44 @@ function MainApp() {
         onSelectModel={setSelectedModel}
         models={models}
         onOpenAuth={() => setShowAuthModal(true)}
+        mode={appMode}
+        onToggleMode={setAppMode}
       />
 
-      <div className="flex flex-1 overflow-hidden relative">
-        <Sidebar
-          sessions={sessions}
-          currentSession={currentSession}
-          onSelectSession={setCurrentSession}
-          onCreateSession={handleCreateSession}
-          onDeleteSession={handleDeleteSession}
-          remainingLimit={config?.remaining_limit ?? 15}
-          dailyLimit={config?.daily_limit ?? 15}
-          isSupabaseConnected={config?.is_supabase_connected ?? false}
-          supabaseStatus={config?.supabase_status}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
+      {appMode === 'clinical' ? (
+        <ClinicalWorkspace selectedModel={selectedModel} />
+      ) : (
+        <div className="flex flex-1 overflow-hidden relative">
+          <Sidebar
+            sessions={sessions}
+            currentSession={currentSession}
+            onSelectSession={setCurrentSession}
+            onCreateSession={handleCreateSession}
+            onDeleteSession={handleDeleteSession}
+            remainingLimit={config?.remaining_limit ?? 15}
+            dailyLimit={config?.daily_limit ?? 15}
+            isSupabaseConnected={config?.is_supabase_connected ?? false}
+            supabaseStatus={config?.supabase_status}
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
 
-        <main className="flex-1 flex flex-col overflow-hidden relative">
-          {currentSession ? (
-            <ChatView
-              session={currentSession}
-              selectedModel={selectedModel}
-              onRefreshSessions={() => {
-                loadSessions();
-                api.getConfig().then(setConfig).catch(console.error);
-              }}
-            />
-          ) : (
-            <WelcomeView onCreateSession={handleCreateSession} />
-          )}
-        </main>
-      </div>
+          <main className="flex-1 flex flex-col overflow-hidden relative">
+            {currentSession ? (
+              <ChatView
+                session={currentSession}
+                selectedModel={selectedModel}
+                onRefreshSessions={() => {
+                  loadSessions();
+                  api.getConfig().then(setConfig).catch(console.error);
+                }}
+              />
+            ) : (
+              <WelcomeView onCreateSession={handleCreateSession} />
+            )}
+          </main>
+        </div>
+      )}
 
       {showAuthModal && (
         <AuthModal onClose={() => setShowAuthModal(false)} />

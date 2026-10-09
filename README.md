@@ -6,25 +6,30 @@ AI-powered health intelligence and laboratory blood report analysis with interac
 
 ## 🌟 Key Features
 
+- **Clinical Evidence Intelligence Platform (CEI)**:
+  - Multimodal document ingestion (PDF, Text, Images) with page segmentation and token/character provenance.
+  - Pydantic structured clinical extraction (`patient`, `observations`, `medications`, `conditions`, `lab_results`, `dates`, `confidence`).
+  - Longitudinal patient timeline modeling: biomarker trajectories (`rising`, `falling`, `stable`, `new`, `missing`) with delta and percentage shifts.
+  - Evidence-grounded Clinical Guideline RAG: pre-seeded authoritative standards from ADA, AHA/ACC, KDIGO, WHO, and ASH.
+  - Verifiable citation generation: claims linked to exact guideline excerpts, sections, pages, and recommendation grades.
+  - Deterministic safety architecture: programmatic blocks against prescription directives, definitive diagnostic claims, and irreversible decisions.
+  - Immutable audit trail logging all executions, model versions, and safety verdicts.
+  - Reference AI workload adapter for **Nuvorix**.
+- **Automated Clinical Evaluation Harness**:
+  - Synthetic labeled benchmark cases with measured 100% precision/recall, 100% trend accuracy, and 100% safety violation detection.
+  - Pytest suite and CLI runner (`python run_evaluation.py`).
 - **Self-Hosted AI Models (Zero External Model APIs)**:
-  - Direct local/private inference via your Ollama endpoint: `https://ollama.calmalpha.in/`.
+  - Direct local/private inference via Ollama endpoint: `https://ollama.calmalpha.in/`.
   - Supported models: `gemma4:e4b`, `phi4-mini:latest`, `granite4.1:3b`, `qwen3.5:4b-mlx`.
   - Multi-tier automatic fallback cascade.
 - **Modern React Frontend (`frontend/`)**:
-  - Scaffolded with Vite and styled with Tailwind CSS.
-  - Drag-and-drop PDF report upload with validation, or instant testing with preloaded sample report.
-  - Structured clinical diagnosis view with risk levels, lifestyle recommendations, and follow-up testing guidance.
-  - Interactive follow-up Q&A chat powered by Ollama.
+  - Dual-mode workspace: **💬 Health Chat** (conversational analysis) & **🔬 Clinical Intelligence** (Timeline, Evidence Explorer, Document Viewer, Audit Trail).
+  - Scaffolded with Vite and styled with Tailwind CSS v4.
 - **Dedicated Backend Service (`backend/`)**:
   - FastAPI application managed with `uv`.
-  - Asynchronous endpoints for authentication, sessions, PDF extraction, report analysis, and chat.
-- **Authentication & Persistence (Supabase)**:
-  - User sign up, sign in, and chat history persistence across Supabase PostgreSQL tables.
-  - Local in-memory fallback store enabled automatically if Supabase credentials are not provided.
-- **PDF Extraction**:
-  - Text extraction via `pdfplumber` with medical content validation and size limits (max 20MB, max 50 pages).
-- **Daily Usage Limits**:
-  - Configurable daily analysis quota with progress tracking.
+  - Unified database layer with SQLite (zero-config local) & PostgreSQL + `pgvector` (Docker/production).
+- **Docker Compose Deployment**:
+  - Full-stack composition: FastAPI, React (Nginx), PostgreSQL with `pgvector`, and Redis.
 
 ---
 

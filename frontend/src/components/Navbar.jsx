@@ -7,28 +7,56 @@ export default function Navbar({
   onSelectModel,
   models,
   onOpenAuth,
+  mode,
+  onToggleMode,
 }) {
   const { user, isAuthenticated, logout } = useAuth();
 
   return (
     <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 lg:px-8 py-3 flex items-center justify-between">
-      {/* Brand */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
-          <Activity className="w-5 h-5 animate-pulse" />
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold tracking-tight text-slate-900">
-              BetterLife
-            </h1>
-            <span className="text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-              Health AI
-            </span>
+      {/* Brand & Mode Switcher */}
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
+            <Activity className="w-5 h-5 animate-pulse" />
           </div>
-          <p className="text-xs text-slate-500 hidden sm:block">
-            Discover a Better, Healthier You with AI
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold tracking-tight text-slate-900">
+                BetterLife
+              </h1>
+              <span className="text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                Health AI
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 hidden sm:block">
+              Discover a Better, Healthier You with AI
+            </p>
+          </div>
+        </div>
+
+        {/* Workspace Mode Switcher */}
+        <div className="hidden sm:flex items-center bg-slate-100 p-1 rounded-xl text-xs font-semibold ml-2">
+          <button
+            onClick={() => onToggleMode('chat')}
+            className={`px-3 py-1.5 rounded-lg transition ${
+              mode === 'chat'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            💬 Health Chat
+          </button>
+          <button
+            onClick={() => onToggleMode('clinical')}
+            className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+              mode === 'clinical'
+                ? 'bg-teal-600 text-white shadow-xs'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            🔬 Clinical Intelligence
+          </button>
         </div>
       </div>
 
