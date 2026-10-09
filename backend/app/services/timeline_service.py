@@ -1,14 +1,15 @@
 import logging
-from typing import List, Dict, Any, Optional
 from collections import defaultdict
+from typing import Any
+
+from app.db.models import Observation
 from app.db.session import SessionLocal
-from app.db.models import Observation, Patient
 from app.schemas.clinical import (
-    BiomarkerTimeline,
     BiomarkerDataPoint,
+    BiomarkerTimeline,
+    ObservationFlag,
     PatientTimelineResponse,
     TrendDirection,
-    ObservationFlag,
 )
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ class TimelineService:
     def get_patient_timeline(
         self,
         patient_id: str,
-        db_session: Optional[Any] = None,
+        db_session: Any | None = None,
     ) -> PatientTimelineResponse:
         should_close = False
         db = db_session
@@ -48,10 +49,10 @@ class TimelineService:
     def compute_timeline_from_observations(
         self,
         patient_id: str,
-        observations: List[Any],
+        observations: list[Any],
     ) -> PatientTimelineResponse:
         # Group observations by normalized biomarker name
-        grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+        grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
         all_dates = set()
 
         for obs in observations:
@@ -61,13 +62,19 @@ class TimelineService:
 
             date_str = (
                 getattr(obs, "observation_date", None)
-                or (obs.created_at.strftime("%Y-%m-%d") if hasattr(obs, "created_at") and obs.created_at else None)
+                or (
+                    obs.created_at.strftime("%Y-%m-%d")
+                    if hasattr(obs, "created_at") and obs.created_at
+                    else None
+                )
                 or obs.get("observation_date")
                 or "2024-01-01"
             )
             all_dates.add(date_str)
 
-            val_raw = getattr(obs, "value_raw", None) or obs.get("value") or obs.get("value_raw") or "0"
+            val_raw = (
+                getattr(obs, "value_raw", None) or obs.get("value") or obs.get("value_raw") or "0"
+            )
             num_val = getattr(obs, "numeric_value", None)
             if num_val is None and isinstance(obs, dict):
                 num_val = obs.get("numeric_value")
@@ -82,19 +89,21 @@ class TimelineService:
             except Exception:
                 flag = ObservationFlag.NORMAL
 
-            grouped[name].append({
-                "date": date_str,
-                "value": val_raw,
-                "numeric_value": float(num_val) if num_val is not None else None,
-                "unit": unit,
-                "category": cat,
-                "flag": flag,
-                "document_id": doc_id,
-            })
+            grouped[name].append(
+                {
+                    "date": date_str,
+                    "value": val_raw,
+                    "numeric_value": float(num_val) if num_val is not None else None,
+                    "unit": unit,
+                    "category": cat,
+                    "flag": flag,
+                    "document_id": doc_id,
+                }
+            )
 
-        timelines: List[BiomarkerTimeline] = []
-        overall_trends: Dict[str, str] = {}
-        sorted_dates = sorted(list(all_dates))
+        timelines: list[BiomarkerTimeline] = []
+        overall_trends: dict[str, str] = {}
+        sorted_dates = sorted(all_dates)
 
         for biomarker_name, data_list in grouped.items():
             # Sort data points for this biomarker chronologically
@@ -138,9 +147,9 @@ class TimelineService:
 
     def _calculate_trend(
         self,
-        points: List[BiomarkerDataPoint],
+        points: list[BiomarkerDataPoint],
         name: str,
-    ) -> tuple[TrendDirection, Optional[float], Optional[float], Optional[str]]:
+    ) -> tuple[TrendDirection, float | None, float | None, str | None]:
         if not points:
             return TrendDirection.MISSING, None, None, "No data points recorded."
 
@@ -170,7 +179,12 @@ class TimelineService:
             trend = TrendDirection.STABLE
             note = f"Remained stable around {latest.numeric_value} {latest.unit} (change of {pct_change}%)."
 
-        if latest.flag in (ObservationFlag.HIGH, ObservationFlag.CRITICAL_HIGH, ObservationFlag.LOW, ObservationFlag.CRITICAL_LOW):
+        if latest.flag in (
+            ObservationFlag.HIGH,
+            ObservationFlag.CRITICAL_HIGH,
+            ObservationFlag.LOW,
+            ObservationFlag.CRITICAL_LOW,
+        ):
             note += f" Status is currently flagged as {latest.flag.value}."
 
         return trend, delta, pct_change, note

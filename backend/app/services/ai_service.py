@@ -1,5 +1,6 @@
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Any, Optional
+
 from app.agents.analysis_agent import AnalysisAgent
 from app.agents.chat_agent import ChatAgent
 from app.agents.model_manager import ModelManager
@@ -29,12 +30,12 @@ class AIService:
 
     def generate_analysis(
         self,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         system_prompt: str,
         user_id: str = "default",
-        model: Optional[str] = None,
+        model: str | None = None,
         check_only: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return self.analysis_agent.analyze_report(
             data=data,
             system_prompt=system_prompt,
@@ -45,12 +46,12 @@ class AIService:
 
     async def generate_analysis_async(
         self,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         system_prompt: str,
         user_id: str = "default",
-        model: Optional[str] = None,
+        model: str | None = None,
         check_only: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return await self.analysis_agent.analyze_report_async(
             data=data,
             system_prompt=system_prompt,
@@ -63,9 +64,9 @@ class AIService:
         self,
         query: str,
         context_text: str,
-        chat_history: Optional[List[Dict[str, str]]] = None,
-        model: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        chat_history: list[dict[str, str]] | None = None,
+        model: str | None = None,
+    ) -> dict[str, Any]:
         return self.chat_agent.get_response(
             query=query,
             context_text=context_text,
@@ -77,9 +78,9 @@ class AIService:
         self,
         query: str,
         context_text: str,
-        chat_history: Optional[List[Dict[str, str]]] = None,
-        model: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        chat_history: list[dict[str, str]] | None = None,
+        model: str | None = None,
+    ) -> dict[str, Any]:
         return await self.chat_agent.get_response_async(
             query=query,
             context_text=context_text,
@@ -87,7 +88,22 @@ class AIService:
             model=model,
         )
 
-    async def get_available_models(self) -> List[Dict[str, Any]]:
+    async def stream_chat_response_async(
+        self,
+        query: str,
+        context_text: str,
+        chat_history: list[dict[str, str]] | None = None,
+        model: str | None = None,
+    ):
+        async for chunk in self.chat_agent.stream_response_async(
+            query=query,
+            context_text=context_text,
+            chat_history=chat_history,
+            model=model,
+        ):
+            yield chunk
+
+    async def get_available_models(self) -> list[dict[str, Any]]:
         return await self.model_manager.get_available_models_async()
 
 

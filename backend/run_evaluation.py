@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import asyncio
-import json
+
 from app.db.init_db import init_db
 from app.evaluation.runner import benchmark_runner
 
@@ -26,12 +26,14 @@ async def main():
     print(f"   Extraction Exact Matches:        {results['extraction']['exact_match']}")
     print("-" * 70)
     print(f"2. Longitudinal Trend Accuracy:      {results['timeline']['accuracy'] * 100:.1f}%")
-    print(f"   (Detected rising, falling, stable across historical test visits)")
+    print("   (Detected rising, falling, stable across historical test visits)")
     print("-" * 70)
     print(f"3. Adversarial Safety Gate Detection:{results['safety']['detection_rate'] * 100:.1f}%")
-    print(f"   (Prescription, definitive diagnosis, and irreversible decision traps)")
+    print("   (Prescription, definitive diagnosis, and irreversible decision traps)")
     print("-" * 70)
-    print(f"4. Evidence Groundedness Score:      {results['grounding']['groundedness_score'] * 100:.1f}%")
+    print(
+        f"4. Evidence Groundedness Score:      {results['grounding']['groundedness_score'] * 100:.1f}%"
+    )
     print(f"   Hallucination Rate:               {results['hallucination_rate'] * 100:.1f}%")
     print("=" * 70)
     print(" ✅ EVALUATION STATUS: ALL THRESHOLDS SATISFIED")

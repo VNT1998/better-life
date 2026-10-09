@@ -1,16 +1,17 @@
 import logging
 import math
 import re
-from typing import List, Dict, Any, Optional
-from app.db.session import SessionLocal
+from typing import Any
+
 from app.db.models import GuidelineChunkModel
+from app.db.session import SessionLocal
 from app.schemas.clinical import (
-    GuidelineChunk,
     EvidenceCitation,
-    RAGQueryResponse,
-    ObservationValue,
-    ObservationFlag,
     FindingWithEvidence,
+    GuidelineChunk,
+    ObservationFlag,
+    ObservationValue,
+    RAGQueryResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,8 +27,8 @@ class KnowledgeBaseService:
         self,
         query: str,
         top_k: int = 3,
-        db_session: Optional[Any] = None,
-    ) -> List[tuple[GuidelineChunkModel, float]]:
+        db_session: Any | None = None,
+    ) -> list[tuple[GuidelineChunkModel, float]]:
         """
         Retrieves relevant clinical guideline chunks for a query using TF-IDF / BM25 style lexical scoring.
         """
@@ -46,12 +47,12 @@ class KnowledgeBaseService:
             if not query_tokens:
                 return [(chunks[0], 0.5)]
 
-            scored: List[tuple[GuidelineChunkModel, float]] = []
+            scored: list[tuple[GuidelineChunkModel, float]] = []
 
             for chunk in chunks:
-                haystack = f"{chunk.title} {chunk.section} {chunk.keywords or ''} {chunk.text}".lower()
-                chunk_tokens = re.findall(r"\b\w{3,}\b", haystack)
-                total_words = max(len(chunk_tokens), 1)
+                haystack = (
+                    f"{chunk.title} {chunk.section} {chunk.keywords or ''} {chunk.text}".lower()
+                )
 
                 # Token matching and category boosting
                 score = 0.0
@@ -77,8 +78,8 @@ class KnowledgeBaseService:
 
     def query_rag(self, query: str, top_k: int = 3) -> RAGQueryResponse:
         results = self.search_guidelines(query, top_k=top_k)
-        chunks: List[GuidelineChunk] = []
-        citations: List[EvidenceCitation] = []
+        chunks: list[GuidelineChunk] = []
+        citations: list[EvidenceCitation] = []
 
         for c, score in results:
             chunk_dto = GuidelineChunk(
@@ -115,19 +116,27 @@ class KnowledgeBaseService:
 
     def ground_observations_with_evidence(
         self,
-        observations: List[ObservationValue],
-        db_session: Optional[Any] = None,
-    ) -> List[FindingWithEvidence]:
+        observations: list[ObservationValue],
+        db_session: Any | None = None,
+    ) -> list[FindingWithEvidence]:
         """
         Takes extracted observations, identifies clinically significant out-of-range values,
         retrieves matching clinical guidelines, and generates evidence-grounded findings with verifiable citations.
         """
-        findings: List[FindingWithEvidence] = []
+        findings: list[FindingWithEvidence] = []
 
         # Filter to abnormal or out-of-range observations
         abnormal_obs = [
-            o for o in observations
-            if o.flag in (ObservationFlag.HIGH, ObservationFlag.LOW, ObservationFlag.CRITICAL_HIGH, ObservationFlag.CRITICAL_LOW, ObservationFlag.BORDERLINE)
+            o
+            for o in observations
+            if o.flag
+            in (
+                ObservationFlag.HIGH,
+                ObservationFlag.LOW,
+                ObservationFlag.CRITICAL_HIGH,
+                ObservationFlag.CRITICAL_LOW,
+                ObservationFlag.BORDERLINE,
+            )
         ]
 
         # If all normal, pick 2 key observations (e.g. Hemoglobin or Glucose) to demonstrate grounding
@@ -137,7 +146,7 @@ class KnowledgeBaseService:
             query = f"{obs.name} {obs.category} {obs.flag.value} reference range {obs.unit}"
             guideline_matches = self.search_guidelines(query, top_k=2, db_session=db_session)
 
-            citations: List[EvidenceCitation] = []
+            citations: list[EvidenceCitation] = []
             for g, score in guideline_matches:
                 claim_text = (
                     f"{obs.name} measured at {obs.value} {obs.unit} is classified as {obs.flag.value} "
@@ -156,7 +165,13 @@ class KnowledgeBaseService:
                     )
                 )
 
-            risk_level = "High" if "CRITICAL" in obs.flag.value else ("Medium" if obs.flag in (ObservationFlag.HIGH, ObservationFlag.LOW) else "Low")
+            risk_level = (
+                "High"
+                if "CRITICAL" in obs.flag.value
+                else (
+                    "Medium" if obs.flag in (ObservationFlag.HIGH, ObservationFlag.LOW) else "Low"
+                )
+            )
             rationale = (
                 f"{obs.name} value of {obs.value} {obs.unit} (Reference: {obs.reference_range_text or 'standard'}) "
                 f"exhibits a {obs.flag.value.lower()} status in source document '{obs.source_document_name or 'Report'}' (Page {obs.page_number or 1})."

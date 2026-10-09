@@ -1,14 +1,15 @@
 import io
-import uuid
 import logging
-from typing import Dict, Any, List, Optional, Tuple
-import pdfplumber
+import uuid
+from typing import Any
+
 import filetype
+import pdfplumber
 from PIL import Image
 
-from app.db.session import SessionLocal
+from app.config import MAX_PDF_PAGES, MAX_UPLOAD_SIZE_MB
 from app.db.models import Document, DocumentPage
-from app.config import MAX_UPLOAD_SIZE_MB, MAX_PDF_PAGES
+from app.db.session import SessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class IngestionService:
     Extracts text with page segmentation, character counts, and provenance tracking.
     """
 
-    def validate_file(self, content: bytes, filename: str) -> Tuple[bool, Optional[str], str]:
+    def validate_file(self, content: bytes, filename: str) -> tuple[bool, str | None, str]:
         """Validates file size and format."""
         max_bytes = MAX_UPLOAD_SIZE_MB * 1024 * 1024
         if len(content) > max_bytes:
@@ -46,14 +47,14 @@ class IngestionService:
             elif kind.mime.startswith("text/"):
                 return True, None, "text"
 
-        return False, f"Unsupported file type. Please upload a PDF, text, or image document.", ""
+        return False, "Unsupported file type. Please upload a PDF, text, or image document.", ""
 
     def process_and_store_document(
         self,
         content: bytes,
         filename: str,
-        db_session: Optional[Any] = None,
-    ) -> Dict[str, Any]:
+        db_session: Any | None = None,
+    ) -> dict[str, Any]:
         """
         Parses document with page segmentation and persists it to the database.
         Returns document metadata and extracted pages.
@@ -62,7 +63,7 @@ class IngestionService:
         if not is_valid:
             return {"success": False, "error": err}
 
-        pages_data: List[Dict[str, Any]] = []
+        pages_data: list[dict[str, Any]] = []
 
         if file_type == "pdf":
             pages_data = self._parse_pdf(content)
@@ -140,28 +141,32 @@ class IngestionService:
         except Exception as e:
             db.rollback()
             logger.error(f"Failed to persist document {filename}: {e}")
-            return {"success": False, "error": f"Database error storing document: {str(e)}"}
+            return {"success": False, "error": f"Database error storing document: {e!s}"}
         finally:
             if should_close_db:
                 db.close()
 
-    def _parse_pdf(self, content: bytes) -> List[Dict[str, Any]]:
+    def _parse_pdf(self, content: bytes) -> list[dict[str, Any]]:
         pages = []
         try:
             with pdfplumber.open(io.BytesIO(content)) as pdf:
                 for idx, page in enumerate(pdf.pages, start=1):
                     text = page.extract_text(layout=True) or page.extract_text() or ""
                     clean_text = text.strip()
-                    pages.append({
-                        "page_number": idx,
-                        "text_content": clean_text if clean_text else f"[Empty or non-text page {idx}]",
-                        "char_count": len(clean_text),
-                    })
+                    pages.append(
+                        {
+                            "page_number": idx,
+                            "text_content": clean_text
+                            if clean_text
+                            else f"[Empty or non-text page {idx}]",
+                            "char_count": len(clean_text),
+                        }
+                    )
         except Exception as e:
             logger.error(f"Error parsing PDF: {e}")
         return pages
 
-    def _parse_text(self, content: bytes) -> List[Dict[str, Any]]:
+    def _parse_text(self, content: bytes) -> list[dict[str, Any]]:
         pages = []
         try:
             text = content.decode("utf-8", errors="replace")
@@ -171,16 +176,18 @@ class IngestionService:
             if not chunks:
                 chunks = [""]
             for idx, chunk in enumerate(chunks, start=1):
-                pages.append({
-                    "page_number": idx,
-                    "text_content": chunk.strip(),
-                    "char_count": len(chunk.strip()),
-                })
+                pages.append(
+                    {
+                        "page_number": idx,
+                        "text_content": chunk.strip(),
+                        "char_count": len(chunk.strip()),
+                    }
+                )
         except Exception as e:
             logger.error(f"Error parsing text file: {e}")
         return pages
 
-    def _parse_image(self, content: bytes, filename: str) -> List[Dict[str, Any]]:
+    def _parse_image(self, content: bytes, filename: str) -> list[dict[str, Any]]:
         try:
             image = Image.open(io.BytesIO(content))
             width, height = image.size
@@ -188,11 +195,13 @@ class IngestionService:
             # Note: For full OCR, tesseract or a vision model can be called.
             # Here we provide image metadata provenance with graceful description
             text_desc = f"[Medical Document Image: {filename} ({img_format}, {width}x{height}px)]"
-            return [{
-                "page_number": 1,
-                "text_content": text_desc,
-                "char_count": len(text_desc),
-            }]
+            return [
+                {
+                    "page_number": 1,
+                    "text_content": text_desc,
+                    "char_count": len(text_desc),
+                }
+            ]
         except Exception as e:
             logger.error(f"Error reading image: {e}")
             return []

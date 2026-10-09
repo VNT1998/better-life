@@ -1,11 +1,9 @@
-import os
-from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-# Default to a local SQLite database in backend directory if DATABASE_URL is not set
-DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent.parent / "betterlife_platform.db"
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_DB_PATH}")
+from app.core.config import settings
+
+DATABASE_URL = settings.DATABASE_URL
 
 connect_args = {}
 if DATABASE_URL.startswith("sqlite"):

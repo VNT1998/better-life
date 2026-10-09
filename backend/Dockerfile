@@ -2,7 +2,6 @@ FROM python:3.12-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
     curl \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -12,19 +11,30 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 WORKDIR /app
 
-# Copy dependency files
-COPY pyproject.toml requirements.txt ./
+# Setup non-root security user
+RUN useradd -m -u 10001 appuser
 
-# Install python dependencies
-RUN uv pip install --system -r requirements.txt
+# Copy dependency specifications
+COPY pyproject.toml uv.lock ./
 
-# Copy backend application code
+# Install Python dependencies into virtual environment
+RUN uv sync --frozen --no-dev
+
+# Copy application source code
 COPY . .
 
-# Initialize DB on build or run
+# Adjust permissions for non-root user
+RUN chown -R appuser:appuser /app
+
+USER appuser
+
+ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 
 EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

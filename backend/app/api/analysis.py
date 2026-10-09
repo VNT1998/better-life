@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, status
+from typing import Any
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
-from app.api.deps import auth_service, ai_service, get_current_user
+
+from app.api.deps import ai_service, auth_service, get_current_user
 from app.prompts import SPECIALIST_PROMPTS
 from app.sample_data import SAMPLE_REPORT
 from app.utils.pdf_extractor import extract_text_from_pdf
@@ -15,7 +17,7 @@ class AnalysisRequest(BaseModel):
     age: int
     gender: str
     report_text: str
-    model: Optional[str] = None
+    model: str | None = None
 
 
 @router.get("/sample-report")
@@ -25,14 +27,15 @@ def get_sample_report():
 
 @router.post("/extract-pdf")
 async def extract_pdf(file: UploadFile = File(...)):
-    if not file.filename.lower().endswith(".pdf"):
+    fname = file.filename or ""
+    if not fname.lower().endswith(".pdf"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Uploaded file must be a PDF document",
         )
 
     content = await file.read()
-    extracted = extract_text_from_pdf(content, filename=file.filename)
+    extracted = extract_text_from_pdf(content, filename=fname)
 
     if isinstance(extracted, str) and (
         extracted.startswith("File size exceeds")
@@ -52,9 +55,7 @@ async def extract_pdf(file: UploadFile = File(...)):
 
 
 @router.post("")
-async def run_analysis(
-    req: AnalysisRequest, user: Dict[str, Any] = Depends(get_current_user)
-):
+async def run_analysis(req: AnalysisRequest, user: dict[str, Any] = Depends(get_current_user)):
     user_id = user["id"]
 
     if not req.patient_name or req.age < 0 or not req.gender or not req.report_text:

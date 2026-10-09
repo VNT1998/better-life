@@ -1,16 +1,17 @@
 import json
+import logging
 import re
 import uuid
-import logging
-from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+from datetime import UTC, datetime
+from typing import Any
+
 from app.agents.model_manager import ModelManager
 from app.schemas.clinical import (
     ClinicalExtractionResult,
-    ObservationValue,
-    MedicationItem,
     ConditionItem,
+    MedicationItem,
     ObservationFlag,
+    ObservationValue,
 )
 
 logger = logging.getLogger(__name__)
@@ -60,19 +61,18 @@ class ClinicalExtractionAgent:
     Transforms raw document pages into normalized Pydantic schemas with full provenance.
     """
 
-    def __init__(self, model_manager: Optional[ModelManager] = None):
+    def __init__(self, model_manager: ModelManager | None = None):
         self.model_manager = model_manager or ModelManager()
 
     async def extract_from_pages_async(
         self,
-        pages: List[Dict[str, Any]],
+        pages: list[dict[str, Any]],
         document_id: str,
         document_name: str,
-        patient_hint: Optional[Dict[str, Any]] = None,
-        model: Optional[str] = None,
+        patient_hint: dict[str, Any] | None = None,
+        model: str | None = None,
     ) -> ClinicalExtractionResult:
         execution_id = f"exec-{uuid.uuid4().hex[:12]}"
-        start_time = datetime.now(timezone.utc)
 
         # Format prompt with page demarcations
         formatted_pages = []
@@ -119,7 +119,7 @@ class ClinicalExtractionAgent:
             patient_hint=patient_hint,
         )
 
-    def _parse_json_from_text(self, text: str) -> Optional[Dict[str, Any]]:
+    def _parse_json_from_text(self, text: str) -> dict[str, Any] | None:
         """Cleans and extracts JSON block from markdown."""
         if not text:
             return None
@@ -147,16 +147,16 @@ class ClinicalExtractionAgent:
 
     def _deterministic_extract(
         self,
-        pages: List[Dict[str, Any]],
-        patient_hint: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        pages: list[dict[str, Any]],
+        patient_hint: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Deterministic regular expression extractor for standard blood panels.
         Guarantees structured extraction even if local LLM is offline or malformed.
         """
         patient_data = patient_hint or {"name": "Patient", "age": 40, "gender": "Unknown"}
-        observations: List[Dict[str, Any]] = []
-        found_dates: List[str] = []
+        observations: list[dict[str, Any]] = []
+        found_dates: list[str] = []
 
         # Standard biomarkers and regex patterns
         patterns = [
@@ -164,85 +164,113 @@ class ClinicalExtractionAgent:
                 "Hemoglobin",
                 "Hematology",
                 r"(?:hemoglobin|hb|hgb)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(g/dl|g/l)?",
-                12.0, 16.0, "g/dL",
+                12.0,
+                16.0,
+                "g/dL",
             ),
             (
                 "Total WBC Count",
                 "Hematology",
                 r"(?:wbc|white blood cell count|total wbc count)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(?:x\s*10\^?3/ul|/cumm|/ul)?",
-                4.0, 11.0, "x10^3/uL",
+                4.0,
+                11.0,
+                "x10^3/uL",
             ),
             (
                 "Platelet Count",
                 "Hematology",
                 r"(?:platelet count|platelets)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(?:lakhs?|/cumm|x\s*10\^?3/ul)?",
-                150.0, 450.0, "x10^3/uL",
+                150.0,
+                450.0,
+                "x10^3/uL",
             ),
             (
                 "Fasting Blood Sugar",
                 "Metabolic",
                 r"(?:fasting blood sugar|fasting glucose|fbs|fpg)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(mg/dl|mmol/l)?",
-                70.0, 99.0, "mg/dL",
+                70.0,
+                99.0,
+                "mg/dL",
             ),
             (
                 "HbA1c",
                 "Metabolic",
                 r"(?:hba1c|glycated hemoglobin|a1c)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(%)?",
-                4.0, 5.6, "%",
+                4.0,
+                5.6,
+                "%",
             ),
             (
                 "Total Cholesterol",
                 "Lipids",
                 r"(?:total cholesterol|cholesterol total)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(mg/dl)?",
-                120.0, 200.0, "mg/dL",
+                120.0,
+                200.0,
+                "mg/dL",
             ),
             (
                 "LDL Cholesterol",
                 "Lipids",
                 r"(?:ldl|ldl cholesterol|ldl-c)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(mg/dl)?",
-                50.0, 100.0, "mg/dL",
+                50.0,
+                100.0,
+                "mg/dL",
             ),
             (
                 "HDL Cholesterol",
                 "Lipids",
                 r"(?:hdl|hdl cholesterol|hdl-c)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(mg/dl)?",
-                40.0, 60.0, "mg/dL",
+                40.0,
+                60.0,
+                "mg/dL",
             ),
             (
                 "Triglycerides",
                 "Lipids",
                 r"(?:triglycerides|tg)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(mg/dl)?",
-                50.0, 150.0, "mg/dL",
+                50.0,
+                150.0,
+                "mg/dL",
             ),
             (
                 "Serum Creatinine",
                 "Renal",
                 r"(?:serum creatinine|creatinine)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(mg/dl)?",
-                0.6, 1.2, "mg/dL",
+                0.6,
+                1.2,
+                "mg/dL",
             ),
             (
                 "Blood Urea Nitrogen",
                 "Renal",
                 r"(?:bun|blood urea nitrogen|urea)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(mg/dl)?",
-                7.0, 20.0, "mg/dL",
+                7.0,
+                20.0,
+                "mg/dL",
             ),
             (
                 "ALT (SGPT)",
                 "Hepatic",
                 r"(?:alt|sgpt|alanine aminotransferase)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(u/l|iu/l)?",
-                7.0, 45.0, "U/L",
+                7.0,
+                45.0,
+                "U/L",
             ),
             (
                 "AST (SGOT)",
                 "Hepatic",
                 r"(?:ast|sgot|aspartate aminotransferase)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(u/l|iu/l)?",
-                8.0, 40.0, "U/L",
+                8.0,
+                40.0,
+                "U/L",
             ),
             (
                 "Total Bilirubin",
                 "Hepatic",
                 r"(?:total bilirubin|bilirubin total)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(mg/dl)?",
-                0.2, 1.2, "mg/dL",
+                0.2,
+                1.2,
+                "mg/dL",
             ),
         ]
 
@@ -264,7 +292,11 @@ class ClinicalExtractionAgent:
                 if match:
                     try:
                         val_num = float(match.group(1))
-                        unit = match.group(2) if len(match.groups()) >= 2 and match.group(2) else default_unit
+                        unit = (
+                            match.group(2)
+                            if len(match.groups()) >= 2 and match.group(2)
+                            else default_unit
+                        )
 
                         flag = "NORMAL"
                         if val_num < ref_low:
@@ -278,21 +310,23 @@ class ClinicalExtractionAgent:
 
                         # Prevent duplicate observation in same extraction
                         if not any(o["name"] == name for o in observations):
-                            observations.append({
-                                "code": name.upper().replace(" ", "_"),
-                                "name": name,
-                                "category": cat,
-                                "value": str(val_num),
-                                "numeric_value": val_num,
-                                "unit": unit,
-                                "reference_low": ref_low,
-                                "reference_high": ref_high,
-                                "reference_range_text": f"{ref_low} - {ref_high} {unit}",
-                                "flag": flag,
-                                "page_number": page_num,
-                                "text_span": text_span,
-                                "confidence": 0.95,
-                            })
+                            observations.append(
+                                {
+                                    "code": name.upper().replace(" ", "_"),
+                                    "name": name,
+                                    "category": cat,
+                                    "value": str(val_num),
+                                    "numeric_value": val_num,
+                                    "unit": unit,
+                                    "reference_low": ref_low,
+                                    "reference_high": ref_high,
+                                    "reference_range_text": f"{ref_low} - {ref_high} {unit}",
+                                    "flag": flag,
+                                    "page_number": page_num,
+                                    "text_span": text_span,
+                                    "confidence": 0.95,
+                                }
+                            )
                     except Exception:
                         continue
 
@@ -306,19 +340,21 @@ class ClinicalExtractionAgent:
 
     def _normalize_extraction(
         self,
-        extracted_json: Dict[str, Any],
+        extracted_json: dict[str, Any],
         document_id: str,
         document_name: str,
         model_name: str,
         execution_id: str,
-        patient_hint: Optional[Dict[str, Any]] = None,
+        patient_hint: dict[str, Any] | None = None,
     ) -> ClinicalExtractionResult:
         patient_info = extracted_json.get("patient") or {}
         if patient_hint:
             patient_info.update({k: v for k, v in patient_hint.items() if v})
 
-        raw_observations = extracted_json.get("observations") or extracted_json.get("lab_results") or []
-        parsed_observations: List[ObservationValue] = []
+        raw_observations = (
+            extracted_json.get("observations") or extracted_json.get("lab_results") or []
+        )
+        parsed_observations: list[ObservationValue] = []
 
         for obs in raw_observations:
             val_raw = str(obs.get("value", ""))
@@ -356,8 +392,14 @@ class ClinicalExtractionAgent:
             parsed_observations.append(parsed_obs)
 
         # Parse medications and conditions if any
-        meds = [MedicationItem(**m) for m in extracted_json.get("medications", []) if isinstance(m, dict)]
-        conds = [ConditionItem(**c) for c in extracted_json.get("conditions", []) if isinstance(c, dict)]
+        meds = [
+            MedicationItem(**m)
+            for m in extracted_json.get("medications", [])
+            if isinstance(m, dict)
+        ]
+        conds = [
+            ConditionItem(**c) for c in extracted_json.get("conditions", []) if isinstance(c, dict)
+        ]
         dates = [str(d) for d in extracted_json.get("dates", [])]
 
         return ClinicalExtractionResult(
@@ -371,7 +413,7 @@ class ClinicalExtractionAgent:
             model_version="1.0.0",
             prompt_version="v2.0",
             execution_id=execution_id,
-            extraction_timestamp=datetime.now(timezone.utc),
+            extraction_timestamp=datetime.now(UTC),
         )
 
 

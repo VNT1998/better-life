@@ -1,22 +1,22 @@
+import logging
 import time
 import uuid
-import logging
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
+
+from app.agents.extraction_agent import extraction_agent
+from app.db.models import AnalysisRecord, Document, Observation, Patient
 from app.db.session import SessionLocal
-from app.db.models import Patient, Document, Observation, AnalysisRecord
 from app.schemas.clinical import (
     AnalysisResultResponse,
     ClinicalExtractionResult,
     FindingWithEvidence,
-    ObservationFlag,
 )
-from app.agents.extraction_agent import extraction_agent
-from app.services.timeline_service import timeline_service
-from app.services.knowledge_base_service import knowledge_base_service
-from app.services.safety_service import safety_service
 from app.services.audit_service import audit_service
+from app.services.knowledge_base_service import knowledge_base_service
 from app.services.nuvorix_adapter import nuvorix_adapter
+from app.services.safety_service import safety_service
+from app.services.timeline_service import timeline_service
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +32,9 @@ class ClinicalOrchestratorService:
         self,
         patient_id: str,
         document_id: str,
-        user_id: Optional[str] = "demo-user",
-        model: Optional[str] = None,
-        db_session: Optional[Any] = None,
+        user_id: str | None = "demo-user",
+        model: str | None = None,
+        db_session: Any | None = None,
     ) -> AnalysisResultResponse:
         start_time = time.time()
         execution_id = f"exec-{uuid.uuid4().hex[:12]}"
@@ -70,18 +70,29 @@ class ClinicalOrchestratorService:
                 {"page_number": p.page_number, "text_content": p.text_content}
                 for p in document.pages
             ]
-            patient_hint = {"id": patient.id, "name": patient.name, "age": patient.age, "gender": patient.gender}
+            patient_hint = {
+                "id": patient.id,
+                "name": patient.name,
+                "age": patient.age,
+                "gender": patient.gender,
+            }
 
-            extracted_result: ClinicalExtractionResult = await extraction_agent.extract_from_pages_async(
-                pages=pages_data,
-                document_id=document.id,
-                document_name=document.filename,
-                patient_hint=patient_hint,
-                model=model,
+            extracted_result: ClinicalExtractionResult = (
+                await extraction_agent.extract_from_pages_async(
+                    pages=pages_data,
+                    document_id=document.id,
+                    document_name=document.filename,
+                    patient_hint=patient_hint,
+                    model=model,
+                )
             )
 
             # 3. Store Extracted Observations in Database
-            obs_date = extracted_result.dates[0] if extracted_result.dates else datetime.utcnow().strftime("%Y-%m-%d")
+            obs_date = (
+                extracted_result.dates[0]
+                if extracted_result.dates
+                else datetime.utcnow().strftime("%Y-%m-%d")
+            )
             for obs in extracted_result.observations:
                 obs_record = Observation(
                     id=str(uuid.uuid4()),
@@ -106,19 +117,27 @@ class ClinicalOrchestratorService:
             db.commit()
 
             # 4. Compute Longitudinal Timeline
-            timeline_response = timeline_service.get_patient_timeline(patient_id=patient.id, db_session=db)
+            timeline_response = timeline_service.get_patient_timeline(
+                patient_id=patient.id, db_session=db
+            )
 
             # 5. Evidence RAG Retrieval & Finding Grounding
-            findings: List[FindingWithEvidence] = knowledge_base_service.ground_observations_with_evidence(
-                observations=extracted_result.observations,
-                db_session=db,
+            findings: list[FindingWithEvidence] = (
+                knowledge_base_service.ground_observations_with_evidence(
+                    observations=extracted_result.observations,
+                    db_session=db,
+                )
             )
 
             # 6. Generate Educational Lifestyle & Testing Guidance
-            lifestyle_guidance, follow_up_tests = self._synthesize_guidance(extracted_result.observations)
+            lifestyle_guidance, follow_up_tests = self._synthesize_guidance(
+                extracted_result.observations
+            )
 
             # 7. Deterministic Safety Validation
-            findings_summary_text = "\n".join(f"{f.finding}: {f.clinical_rationale}" for f in findings)
+            findings_summary_text = "\n".join(
+                f"{f.finding}: {f.clinical_rationale}" for f in findings
+            )
             all_citations = [c for f in findings for c in f.citations]
 
             safety_verdict = safety_service.validate_clinical_safety(
@@ -217,34 +236,48 @@ class ClinicalOrchestratorService:
             if should_close and db:
                 db.close()
 
-    def _synthesize_guidance(self, observations: List[Any]) -> tuple[List[str], List[str]]:
-        guidance: List[str] = []
-        tests: List[str] = []
+    def _synthesize_guidance(self, observations: list[Any]) -> tuple[list[str], list[str]]:
+        guidance: list[str] = []
+        tests: list[str] = []
 
         obs_names = {o.name.lower(): o for o in observations}
 
         # Metabolic & Glucose
         if any("glucose" in k or "sugar" in k or "hba1c" in k for k in obs_names):
-            guidance.append("Maintain consistent meal timings, prioritize whole grains with soluble fiber, and monitor glycemic response.")
-            tests.append("Repeat Fasting Blood Sugar and 3-month Glycated Hemoglobin (HbA1c) monitoring.")
+            guidance.append(
+                "Maintain consistent meal timings, prioritize whole grains with soluble fiber, and monitor glycemic response."
+            )
+            tests.append(
+                "Repeat Fasting Blood Sugar and 3-month Glycated Hemoglobin (HbA1c) monitoring."
+            )
 
         # Lipids & Cardiovascular
         if any("cholesterol" in k or "triglyceride" in k or "ldl" in k for k in obs_names):
-            guidance.append("Emphasize a cardioprotective diet: reduce saturated and trans fats, increase omega-3 fatty acids, and incorporate regular aerobic activity.")
+            guidance.append(
+                "Emphasize a cardioprotective diet: reduce saturated and trans fats, increase omega-3 fatty acids, and incorporate regular aerobic activity."
+            )
             tests.append("Comprehensive Lipid Profile recheck in 8 to 12 weeks.")
 
         # Hematology & Anemia
         if any("hemoglobin" in k or "wbc" in k or "platelet" in k for k in obs_names):
-            guidance.append("Ensure adequate dietary intake of iron, vitamin B12, and folate; maintain optimal hydration.")
-            tests.append("Confirmatory Complete Blood Count (CBC) with peripheral smear and serum ferritin.")
+            guidance.append(
+                "Ensure adequate dietary intake of iron, vitamin B12, and folate; maintain optimal hydration."
+            )
+            tests.append(
+                "Confirmatory Complete Blood Count (CBC) with peripheral smear and serum ferritin."
+            )
 
         # Renal / Kidney
         if any("creatinine" in k or "bun" in k for k in obs_names):
-            guidance.append("Ensure adequate hydration throughout the day; exercise caution with regular non-steroidal anti-inflammatory drugs (NSAIDs).")
+            guidance.append(
+                "Ensure adequate hydration throughout the day; exercise caution with regular non-steroidal anti-inflammatory drugs (NSAIDs)."
+            )
             tests.append("Renal Function Panel and Urine Albumin-to-Creatinine Ratio (uACR).")
 
         if not guidance:
-            guidance.append("Continue balanced lifestyle with regular physical exercise, adequate restorative sleep, and nutritional diversity.")
+            guidance.append(
+                "Continue balanced lifestyle with regular physical exercise, adequate restorative sleep, and nutritional diversity."
+            )
             tests.append("Routine annual comprehensive health checkup.")
 
         return guidance, tests

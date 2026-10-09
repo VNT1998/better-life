@@ -1,13 +1,15 @@
+from typing import Any
+
 from fastapi import Header, HTTPException, status
-from typing import Optional, Dict, Any
-from app.auth.auth_service import AuthService, GUEST_UUID
+
+from app.auth.auth_service import GUEST_UUID, AuthService
 from app.services.ai_service import AIService
 
 auth_service = AuthService()
 ai_service = AIService.get_instance()
 
 
-def get_current_user(authorization: Optional[str] = Header(None)) -> Dict[str, Any]:
+def get_current_user(authorization: str | None = Header(None)) -> dict[str, Any]:
     """Dependency to extract and validate the user token."""
     if not authorization:
         # Default guest identity with valid UUID for instant development/testing

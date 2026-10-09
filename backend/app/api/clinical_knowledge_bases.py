@@ -1,21 +1,19 @@
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
 from app.db.models import GuidelineChunkModel
+from app.db.session import get_db
 from app.schemas.clinical import (
     KnowledgeBaseResponse,
     RAGQueryRequest,
     RAGQueryResponse,
-    GuidelineChunk,
 )
 from app.services.knowledge_base_service import knowledge_base_service
 
 router = APIRouter(prefix="/knowledge-bases", tags=["knowledge-bases"])
 
 
-@router.get("", response_model=List[KnowledgeBaseResponse])
+@router.get("", response_model=list[KnowledgeBaseResponse])
 def list_knowledge_bases(db: Session = Depends(get_db)):
     """Lists indexed clinical guideline knowledge bases and chunk counts."""
     count = db.query(GuidelineChunkModel).count()

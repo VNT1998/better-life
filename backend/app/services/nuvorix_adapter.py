@@ -1,9 +1,8 @@
-import os
 import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +29,8 @@ class NuvorixAdapter:
         findings_count: int,
         citations_count: int,
         safety_status: str,
-        metrics: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, Any]:
+        metrics: dict[str, float] | None = None,
+    ) -> dict[str, Any]:
         """
         Creates a Nuvorix-compliant workload run descriptor.
         """
@@ -57,7 +56,8 @@ class NuvorixAdapter:
                 "verdict": safety_status,
                 "passed": safety_status == "PASSED",
             },
-            "metrics": metrics or {
+            "metrics": metrics
+            or {
                 "extraction_exact_match": 1.0,
                 "citation_groundedness": 1.0,
                 "hallucination_rate": 0.0,
@@ -75,7 +75,7 @@ class NuvorixAdapter:
 
         return run_record
 
-    def get_workload_status(self) -> Dict[str, Any]:
+    def get_workload_status(self) -> dict[str, Any]:
         runs = list(NUVORIX_DATA_DIR.glob("*.json"))
         return {
             "workload_id": self.WORKLOAD_ID,

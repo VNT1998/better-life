@@ -1,12 +1,11 @@
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.db.models import Document
 from app.db.session import get_db
-from app.db.models import Document, DocumentPage
-from app.schemas.clinical import DocumentResponse, DocumentPageSchema
-from app.services.ingestion_service import ingestion_service
+from app.schemas.clinical import DocumentPageSchema, DocumentResponse
 from app.services.audit_service import audit_service
+from app.services.ingestion_service import ingestion_service
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -38,7 +37,11 @@ async def upload_document(
 
     audit_service.log_event(
         event_type="DOCUMENT_UPLOADED",
-        payload={"filename": file.filename, "pages": result["page_count"], "size_bytes": len(content)},
+        payload={
+            "filename": file.filename,
+            "pages": result["page_count"],
+            "size_bytes": len(content),
+        },
         db_session=db,
     )
 
@@ -63,7 +66,7 @@ async def upload_document(
     )
 
 
-@router.get("", response_model=List[DocumentResponse])
+@router.get("", response_model=list[DocumentResponse])
 def list_documents(db: Session = Depends(get_db)):
     """Lists all ingested clinical documents."""
     docs = db.query(Document).order_by(Document.created_at.desc()).all()

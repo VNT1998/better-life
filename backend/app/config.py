@@ -1,32 +1,26 @@
-import os
-from dotenv import load_dotenv
+"""
+Legacy configuration adapter re-exporting typed settings from app.core.config.
+"""
 
-load_dotenv()
+from app.core.config import settings
 
-APP_NAME = "BetterLife"
-APP_DESCRIPTION = "BetterLife - Comprehensive AI-Powered Blood Report & Health Insights"
-APP_ICON = "🌱"
-APP_TAGLINE = "Discover a Better, Healthier You with AI"
+APP_NAME = settings.APP_NAME
+APP_DESCRIPTION = settings.APP_DESCRIPTION
+APP_ICON = settings.APP_ICON
+APP_TAGLINE = settings.APP_TAGLINE
 
-# App settings
-MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", "20"))
-MAX_PDF_PAGES = int(os.getenv("MAX_PDF_PAGES", "50"))
-SESSION_TIMEOUT_MINUTES = int(os.getenv("SESSION_TIMEOUT_MINUTES", "30"))
-ANALYSIS_DAILY_LIMIT = int(os.getenv("ANALYSIS_DAILY_LIMIT", "15"))
+MAX_UPLOAD_SIZE_MB = settings.MAX_UPLOAD_SIZE_MB
+MAX_PDF_PAGES = settings.MAX_PDF_PAGES
+SESSION_TIMEOUT_MINUTES = settings.SESSION_TIMEOUT_MINUTES
+ANALYSIS_DAILY_LIMIT = settings.ANALYSIS_DAILY_LIMIT
 
-# Ollama Settings (Self-hosted model endpoint)
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "https://ollama.calmalpha.in").rstrip("/")
-OLLAMA_PRIMARY_MODEL = os.getenv("OLLAMA_PRIMARY_MODEL", "gemma4:e4b")
-OLLAMA_FALLBACK_MODELS = [
-    m.strip()
-    for m in os.getenv("OLLAMA_FALLBACK_MODELS", "phi4-mini:latest,granite4.1:3b,qwen3.5:4b-mlx").split(",")
-    if m.strip()
-]
+OLLAMA_BASE_URL = settings.OLLAMA_BASE_URL.rstrip("/")
+OLLAMA_PRIMARY_MODEL = settings.OLLAMA_PRIMARY_MODEL
+OLLAMA_FALLBACK_MODELS = settings.fallback_models_list
 
-# Supabase Auth & Database Settings
-SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", os.getenv("SUPABASE_ANON_KEY", ""))
+SUPABASE_URL = settings.SUPABASE_URL
+SUPABASE_KEY = settings.SUPABASE_KEY
 
-# UI Settings
-PRIMARY_COLOR = "#0ea5e9"
-SECONDARY_COLOR = "#0284c7"
+PRIMARY_COLOR = settings.PRIMARY_COLOR
+SECONDARY_COLOR = settings.SECONDARY_COLOR
+CORS_ORIGINS = settings.CORS_ORIGINS

@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from typing import Dict, Any
+
 from app.api.deps import auth_service, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -47,7 +49,7 @@ def sign_in(req: SignInRequest):
 
 
 @router.get("/me")
-def get_me(user: Dict[str, Any] = Depends(get_current_user)):
+def get_me(user: dict[str, Any] = Depends(get_current_user)):
     return {"user": user}
 
 

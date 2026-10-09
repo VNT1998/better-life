@@ -1,28 +1,28 @@
 import uuid
-from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
 from app.db.models import Patient
+from app.db.session import get_db
 from app.schemas.clinical import (
+    AnalysisResultResponse,
     PatientCreate,
     PatientResponse,
     PatientTimelineResponse,
-    AnalysisResultResponse,
 )
+from app.services.audit_service import audit_service
 from app.services.orchestrator_service import clinical_orchestrator
 from app.services.timeline_service import timeline_service
-from app.services.audit_service import audit_service
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 
 
 class PatientAnalyzeRequest(BaseModel):
     document_id: str
-    model: Optional[str] = None
-    user_id: Optional[str] = "clinical-analyst"
+    model: str | None = None
+    user_id: str | None = "clinical-analyst"
 
 
 @router.post("", response_model=PatientResponse)
@@ -55,7 +55,7 @@ def create_patient(req: PatientCreate, db: Session = Depends(get_db)):
     )
 
 
-@router.get("", response_model=List[PatientResponse])
+@router.get("", response_model=list[PatientResponse])
 def list_patients(db: Session = Depends(get_db)):
     """Lists all enrolled patients."""
     patients = db.query(Patient).order_by(Patient.created_at.desc()).all()
@@ -106,12 +106,12 @@ async def analyze_patient(
         )
         return result
     except ValueError as ve:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ve))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ve)) from ve
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Clinical analysis pipeline error: {str(e)}",
-        )
+            detail=f"Clinical analysis pipeline error: {e!s}",
+        ) from e
 
 
 @router.get("/{patient_id}/timeline", response_model=PatientTimelineResponse)

@@ -1,19 +1,24 @@
-*.env
-.streamlit/secrets.toml
-# Python
+# Environments & Secrets
+.env
+.env.*
+!.env.example
+!frontend/.env.example
+*.local
+
+# Python build & packaging artifacts
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-build/
+/build/
 develop-eggs/
-dist/
+/dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -22,40 +27,43 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual Environment
+# Virtual environments
+.venv/
 venv/
 env/
 ENV/
-.env/
-.venv/
 
-# IDE
+# Testing & Quality tool caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+
+# Node & Frontend build outputs
+node_modules/
+frontend/node_modules/
+frontend/dist/
+.vite/
+frontend/.vite/
+coverage/
+
+# Databases & local state
+*.db
+*.sqlite
+*.sqlite3
+*.log
+logs/
+log/
+.temp*
+*.temp.txt
+
+# IDE & Operating System
 .idea/
 .vscode/
 *.swp
 *.swo
 .DS_Store
-
-# Logs
-*.log
-logs/
-log/
-
-# Local development
-.temp*
-*.temp.txt
-*.db
-*.sqlite
-*.sqlite3
-.coverage
-htmlcov/
-.pytest_cache/
-.tox/
-.coverage.*
-# Node & Frontend
-node_modules/
-dist/
-frontend/dist/
-.vite/
-.env.local
-.env.*.local
+Thumbs.db

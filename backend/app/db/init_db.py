@@ -1,6 +1,7 @@
 import logging
-from app.db.session import engine, Base, SessionLocal
+
 from app.db.models import GuidelineChunkModel
+from app.db.session import Base, SessionLocal, engine
 
 logger = logging.getLogger(__name__)
 

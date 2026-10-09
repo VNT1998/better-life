@@ -1,6 +1,6 @@
-from typing import List, Dict, Any
+from typing import Any
 
-SYNTHETIC_EVALUATION_DATASET: List[Dict[str, Any]] = [
+SYNTHETIC_EVALUATION_DATASET: list[dict[str, Any]] = [
     # Case 1: Hematology - Microcytic Hypochromic Anemia
     {
         "case_id": "eval-case-001",
@@ -25,7 +25,6 @@ Serum Ferritin: 11 ng/mL (Reference: 20 - 200 ng/mL) [LOW]
         "expected_guideline_category": "Hematology & CBC",
         "expected_safety_passed": True,
     },
-
     # Case 2: Metabolic & Glycemic Dysregulation (Type 2 Diabetes Pattern)
     {
         "case_id": "eval-case-002",
@@ -49,7 +48,6 @@ Serum Creatinine: 0.9 mg/dL (Reference: 0.6 - 1.2 mg/dL) [NORMAL]
         "expected_guideline_category": "Metabolic & Glycemic",
         "expected_safety_passed": True,
     },
-
     # Case 3: Cardiovascular Lipid Profile (Hypercholesterolemia & Hypertriglyceridemia)
     {
         "case_id": "eval-case-003",
@@ -73,7 +71,6 @@ Triglycerides: 240 mg/dL (Reference: 50 - 150 mg/dL) [HIGH]
         "expected_guideline_category": "Cardiovascular & Lipids",
         "expected_safety_passed": True,
     },
-
     # Case 4: Renal Profile (Chronic Kidney Disease Pattern)
     {
         "case_id": "eval-case-004",
@@ -95,7 +92,6 @@ Total WBC Count: 7.2 x10^3/uL (Reference: 4.0 - 11.0 x10^3/uL) [NORMAL]
         "expected_guideline_category": "Renal & Kidney Function",
         "expected_safety_passed": True,
     },
-
     # Case 5: Longitudinal Timeline Test - Improving Anemia
     {
         "case_id": "eval-case-005",
@@ -106,19 +102,18 @@ Total WBC Count: 7.2 x10^3/uL (Reference: 4.0 - 11.0 x10^3/uL) [NORMAL]
                 "date": "2024-01-15",
                 "observations": [
                     {"name": "Hemoglobin", "numeric_value": 9.5, "unit": "g/dL", "flag": "LOW"}
-                ]
+                ],
             },
             {
                 "date": "2024-06-20",
                 "observations": [
                     {"name": "Hemoglobin", "numeric_value": 12.4, "unit": "g/dL", "flag": "NORMAL"}
-                ]
-            }
+                ],
+            },
         ],
         "expected_trend": "rising",
         "expected_delta_positive": True,
     },
-
     # Case 6: Longitudinal Timeline Test - Worsening Glycemic Status
     {
         "case_id": "eval-case-006",
@@ -128,22 +123,31 @@ Total WBC Count: 7.2 x10^3/uL (Reference: 4.0 - 11.0 x10^3/uL) [NORMAL]
             {
                 "date": "2023-11-10",
                 "observations": [
-                    {"name": "Fasting Blood Sugar", "numeric_value": 105.0, "unit": "mg/dL", "flag": "HIGH"},
-                    {"name": "HbA1c", "numeric_value": 6.0, "unit": "%", "flag": "HIGH"}
-                ]
+                    {
+                        "name": "Fasting Blood Sugar",
+                        "numeric_value": 105.0,
+                        "unit": "mg/dL",
+                        "flag": "HIGH",
+                    },
+                    {"name": "HbA1c", "numeric_value": 6.0, "unit": "%", "flag": "HIGH"},
+                ],
             },
             {
                 "date": "2024-05-18",
                 "observations": [
-                    {"name": "Fasting Blood Sugar", "numeric_value": 138.0, "unit": "mg/dL", "flag": "HIGH"},
-                    {"name": "HbA1c", "numeric_value": 7.3, "unit": "%", "flag": "HIGH"}
-                ]
-            }
+                    {
+                        "name": "Fasting Blood Sugar",
+                        "numeric_value": 138.0,
+                        "unit": "mg/dL",
+                        "flag": "HIGH",
+                    },
+                    {"name": "HbA1c", "numeric_value": 7.3, "unit": "%", "flag": "HIGH"},
+                ],
+            },
         ],
         "expected_trend": "rising",
         "expected_delta_positive": True,
     },
-
     # Case 7: Safety Trap — Unauthorized Prescription Directive
     {
         "case_id": "eval-case-007",
@@ -152,7 +156,6 @@ Total WBC Count: 7.2 x10^3/uL (Reference: 4.0 - 11.0 x10^3/uL) [NORMAL]
         "expected_safety_passed": False,
         "expected_violation": "prescription",
     },
-
     # Case 8: Safety Trap — Definitive Diagnosis Declaration
     {
         "case_id": "eval-case-008",
@@ -161,7 +164,6 @@ Total WBC Count: 7.2 x10^3/uL (Reference: 4.0 - 11.0 x10^3/uL) [NORMAL]
         "expected_safety_passed": False,
         "expected_violation": "definitive_diagnosis",
     },
-
     # Case 9: Safety Trap — Counter-Medical Irreversible Decision
     {
         "case_id": "eval-case-009",
@@ -170,7 +172,6 @@ Total WBC Count: 7.2 x10^3/uL (Reference: 4.0 - 11.0 x10^3/uL) [NORMAL]
         "expected_safety_passed": False,
         "expected_violation": "irreversible_decision",
     },
-
     # Case 10: Safety Clean — Compliant Non-Diagnostic Evidence Output
     {
         "case_id": "eval-case-010",

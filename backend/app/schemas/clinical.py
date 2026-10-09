@@ -1,10 +1,11 @@
-from datetime import datetime, date
-from typing import List, Dict, Any, Optional, Union
+from datetime import datetime
+from enum import StrEnum
+from typing import Any
+
 from pydantic import BaseModel, Field
-from enum import Enum
 
 
-class ObservationFlag(str, Enum):
+class ObservationFlag(StrEnum):
     NORMAL = "NORMAL"
     HIGH = "HIGH"
     LOW = "LOW"
@@ -14,7 +15,7 @@ class ObservationFlag(str, Enum):
     ABNORMAL = "ABNORMAL"
 
 
-class TrendDirection(str, Enum):
+class TrendDirection(StrEnum):
     RISING = "rising"
     FALLING = "falling"
     STABLE = "stable"
@@ -22,7 +23,7 @@ class TrendDirection(str, Enum):
     MISSING = "missing"
 
 
-class SafetyStatus(str, Enum):
+class SafetyStatus(StrEnum):
     PASSED = "PASSED"
     FLAGGED = "FLAGGED"
     REJECTED = "REJECTED"
@@ -33,17 +34,18 @@ class SafetyStatus(str, Enum):
 # 1. Document Schemas
 # ==========================================
 
+
 class DocumentPageSchema(BaseModel):
     page_number: int
     char_count: int
     text_preview: str
-    text_content: Optional[str] = None
+    text_content: str | None = None
 
 
 class DocumentCreate(BaseModel):
     filename: str
     file_type: str = "pdf"
-    content_base64: Optional[str] = None
+    content_base64: str | None = None
 
 
 class DocumentResponse(BaseModel):
@@ -52,27 +54,28 @@ class DocumentResponse(BaseModel):
     file_type: str
     page_count: int
     created_at: datetime
-    pages: List[DocumentPageSchema] = []
-    metadata: Dict[str, Any] = {}
+    pages: list[DocumentPageSchema] = []
+    metadata: dict[str, Any] = {}
 
 
 # ==========================================
 # 2. Patient Schemas
 # ==========================================
 
+
 class PatientCreate(BaseModel):
-    id: Optional[str] = None
+    id: str | None = None
     name: str
-    age: Optional[int] = None
-    gender: Optional[str] = None
-    medical_record_number: Optional[str] = None
+    age: int | None = None
+    gender: str | None = None
+    medical_record_number: str | None = None
 
 
 class PatientResponse(BaseModel):
     id: str
     name: str
-    age: Optional[int] = None
-    gender: Optional[str] = None
+    age: int | None = None
+    gender: str | None = None
     created_at: datetime
 
 
@@ -80,55 +83,56 @@ class PatientResponse(BaseModel):
 # 3. Structured Clinical Extraction Schemas
 # ==========================================
 
+
 class ObservationValue(BaseModel):
-    code: Optional[str] = None
+    code: str | None = None
     name: str
     category: str = "Laboratory"  # Hematology, Biochemistry, Lipids, Metabolic, etc.
-    value: Union[float, str]
-    numeric_value: Optional[float] = None
+    value: float | str
+    numeric_value: float | None = None
     unit: str = ""
-    reference_low: Optional[float] = None
-    reference_high: Optional[float] = None
-    reference_range_text: Optional[str] = None
+    reference_low: float | None = None
+    reference_high: float | None = None
+    reference_range_text: str | None = None
     flag: ObservationFlag = ObservationFlag.NORMAL
-    interpretation: Optional[str] = None
+    interpretation: str | None = None
 
     # Provenance
-    source_document_id: Optional[str] = None
-    source_document_name: Optional[str] = None
-    page_number: Optional[int] = None
-    text_span: Optional[str] = None
+    source_document_id: str | None = None
+    source_document_name: str | None = None
+    page_number: int | None = None
+    text_span: str | None = None
     confidence: float = Field(default=0.95, ge=0.0, le=1.0)
 
 
 class MedicationItem(BaseModel):
     name: str
-    dosage: Optional[str] = None
-    frequency: Optional[str] = None
+    dosage: str | None = None
+    frequency: str | None = None
     status: str = "active"  # active, discontinued, mentioned
-    source_document_id: Optional[str] = None
-    page_number: Optional[int] = None
+    source_document_id: str | None = None
+    page_number: int | None = None
 
 
 class ConditionItem(BaseModel):
     name: str
     status: str = "suspected"  # historical, current, suspected, ruled_out
-    notes: Optional[str] = None
-    source_document_id: Optional[str] = None
-    page_number: Optional[int] = None
+    notes: str | None = None
+    source_document_id: str | None = None
+    page_number: int | None = None
 
 
 class ClinicalExtractionResult(BaseModel):
-    patient: Dict[str, Any]
-    observations: List[ObservationValue] = []
-    medications: List[MedicationItem] = []
-    conditions: List[ConditionItem] = []
-    lab_results: List[ObservationValue] = []
-    dates: List[str] = []
+    patient: dict[str, Any]
+    observations: list[ObservationValue] = []
+    medications: list[MedicationItem] = []
+    conditions: list[ConditionItem] = []
+    lab_results: list[ObservationValue] = []
+    dates: list[str] = []
 
     # Model & Execution Metadata
     model_name: str = "unknown"
-    model_version: Optional[str] = None
+    model_version: str | None = None
     prompt_version: str = "v2.0"
     execution_id: str
     extraction_timestamp: datetime = Field(default_factory=datetime.utcnow)
@@ -138,36 +142,38 @@ class ClinicalExtractionResult(BaseModel):
 # 4. Longitudinal Timeline Schemas
 # ==========================================
 
+
 class BiomarkerDataPoint(BaseModel):
     date: str
-    value: Union[float, str]
-    numeric_value: Optional[float] = None
+    value: float | str
+    numeric_value: float | None = None
     unit: str
     flag: ObservationFlag
-    document_id: Optional[str] = None
+    document_id: str | None = None
 
 
 class BiomarkerTimeline(BaseModel):
     biomarker_name: str
     category: str
     unit: str
-    data_points: List[BiomarkerDataPoint] = []
+    data_points: list[BiomarkerDataPoint] = []
     trend: TrendDirection = TrendDirection.STABLE
-    delta: Optional[float] = None
-    percentage_change: Optional[float] = None
-    clinical_note: Optional[str] = None
+    delta: float | None = None
+    percentage_change: float | None = None
+    clinical_note: str | None = None
 
 
 class PatientTimelineResponse(BaseModel):
     patient_id: str
-    recorded_dates: List[str]
-    timelines: List[BiomarkerTimeline]
-    overall_trends: Dict[str, str] = {}
+    recorded_dates: list[str]
+    timelines: list[BiomarkerTimeline]
+    overall_trends: dict[str, str] = {}
 
 
 # ==========================================
 # 5. Evidence RAG Schemas
 # ==========================================
+
 
 class GuidelineChunk(BaseModel):
     id: str
@@ -176,10 +182,10 @@ class GuidelineChunk(BaseModel):
     organization: str  # e.g. "ADA", "ACC/AHA", "KDIGO", "WHO"
     category: str
     section: str
-    page: Optional[int] = None
+    page: int | None = None
     text: str
-    recommendation_level: Optional[str] = None
-    publication_year: Optional[int] = None
+    recommendation_level: str | None = None
+    publication_year: int | None = None
 
 
 class EvidenceCitation(BaseModel):
@@ -187,9 +193,9 @@ class EvidenceCitation(BaseModel):
     guideline_name: str
     organization: str
     section: str
-    page: Optional[int] = None
+    page: int | None = None
     relevant_excerpt: str
-    recommendation_level: Optional[str] = None
+    recommendation_level: str | None = None
     similarity_score: float = 0.0
 
 
@@ -211,32 +217,33 @@ class KnowledgeBaseResponse(BaseModel):
 class RAGQueryRequest(BaseModel):
     query: str
     top_k: int = 4
-    category: Optional[str] = None
+    category: str | None = None
 
 
 class RAGQueryResponse(BaseModel):
     query: str
-    evidence_chunks: List[GuidelineChunk]
-    citations: List[EvidenceCitation]
+    evidence_chunks: list[GuidelineChunk]
+    citations: list[EvidenceCitation]
 
 
 # ==========================================
 # 6. Safety & Clinical Analysis Schemas
 # ==========================================
 
+
 class SafetyCheckResult(BaseModel):
     status: SafetyStatus
     passed: bool
-    violations: List[str] = []
+    violations: list[str] = []
     requires_human_review: bool = False
-    checks: Dict[str, bool] = {
+    checks: dict[str, bool] = {
         "no_prescriptions": True,
         "no_definitive_diagnosis": True,
         "no_irreversible_decisions": True,
         "citations_grounded": True,
         "confidence_threshold_met": True,
     }
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class FindingWithEvidence(BaseModel):
@@ -244,28 +251,28 @@ class FindingWithEvidence(BaseModel):
     category: str
     risk_level: str  # Low, Medium, High, Borderline
     clinical_rationale: str
-    citations: List[EvidenceCitation] = []
+    citations: list[EvidenceCitation] = []
 
 
 class AnalysisResultResponse(BaseModel):
     id: str
     patient_id: str
     execution_id: str
-    document_ids: List[str] = []
+    document_ids: list[str] = []
     created_at: datetime
 
     # MLOps Provenance
     model_name: str
-    model_version: Optional[str] = None
+    model_version: str | None = None
     prompt_version: str
     execution_duration_sec: float = 0.0
 
     # Structured Results
     extracted_data: ClinicalExtractionResult
-    timeline_summary: Optional[Dict[str, Any]] = None
-    findings: List[FindingWithEvidence] = []
-    dietary_lifestyle_recommendations: List[str] = []
-    recommended_follow_up_tests: List[str] = []
+    timeline_summary: dict[str, Any] | None = None
+    findings: list[FindingWithEvidence] = []
+    dietary_lifestyle_recommendations: list[str] = []
+    recommended_follow_up_tests: list[str] = []
 
     # Safety Verdict
     safety_verdict: SafetyCheckResult
@@ -283,12 +290,13 @@ class AnalysisResultResponse(BaseModel):
 # 7. Audit Trail Schemas
 # ==========================================
 
+
 class AuditEventCreate(BaseModel):
     event_type: str
-    user_id: Optional[str] = None
-    patient_id: Optional[str] = None
-    execution_id: Optional[str] = None
-    payload: Dict[str, Any] = {}
+    user_id: str | None = None
+    patient_id: str | None = None
+    execution_id: str | None = None
+    payload: dict[str, Any] = {}
     status: str = "SUCCESS"
 
 
@@ -296,8 +304,8 @@ class AuditEventResponse(BaseModel):
     id: str
     timestamp: datetime
     event_type: str
-    user_id: Optional[str] = None
-    patient_id: Optional[str] = None
-    execution_id: Optional[str] = None
-    payload: Dict[str, Any] = {}
+    user_id: str | None = None
+    patient_id: str | None = None
+    execution_id: str | None = None
+    payload: dict[str, Any] = {}
     status: str

@@ -1,9 +1,8 @@
-from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
 from app.db.models import AnalysisRecord
+from app.db.session import get_db
 
 router = APIRouter(prefix="/analyses", tags=["analyses"])
 
@@ -13,7 +12,9 @@ def get_analysis(analysis_id: str, db: Session = Depends(get_db)):
     """Fetches full clinical intelligence analysis record by ID."""
     rec = db.query(AnalysisRecord).filter(AnalysisRecord.id == analysis_id).first()
     if not rec:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Analysis record not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Analysis record not found"
+        )
 
     return {
         "id": rec.id,
@@ -31,7 +32,7 @@ def get_analysis(analysis_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("")
-def list_analyses(patient_id: str = None, db: Session = Depends(get_db)):
+def list_analyses(patient_id: str | None = None, db: Session = Depends(get_db)):
     """Lists historical clinical analyses."""
     q = db.query(AnalysisRecord)
     if patient_id:
@@ -44,7 +45,9 @@ def list_analyses(patient_id: str = None, db: Session = Depends(get_db)):
             "patient_id": r.patient_id,
             "execution_id": r.execution_id,
             "model_name": r.model_name,
-            "safety_verdict": r.safety_verdict_json.get("status") if r.safety_verdict_json else "UNKNOWN",
+            "safety_verdict": r.safety_verdict_json.get("status")
+            if r.safety_verdict_json
+            else "UNKNOWN",
             "human_review_required": r.human_review_required,
             "created_at": r.created_at,
         }

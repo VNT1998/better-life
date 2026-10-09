@@ -1,5 +1,7 @@
 import io
+
 import pdfplumber
+
 from app.config import MAX_PDF_PAGES, MAX_UPLOAD_SIZE_MB
 from app.utils.validators import validate_pdf_content
 
@@ -43,4 +45,4 @@ def extract_text_from_pdf(pdf_file, filename: str = "report.pdf"):
 
         return text
     except Exception as e:
-        return f"Error extracting text from PDF: {str(e)}"
+        return f"Error extracting text from PDF: {e!s}"

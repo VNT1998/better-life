@@ -1,5 +1,4 @@
 import re
-from app.config import MAX_UPLOAD_SIZE_MB
 
 
 def validate_password(password: str):
@@ -23,10 +22,30 @@ def validate_pdf_content(text: str):
         return False, "Extracted text is too short to be a valid laboratory report."
 
     medical_markers = [
-        "blood", "test", "report", "lab", "laboratory", "specimen",
-        "reference", "result", "hemoglobin", "wbc", "rbc", "platelet",
-        "glucose", "cholesterol", "creatinine", "alt", "ast", "urine",
-        "panel", "profile", "patient", "clinical", "diagnostic", "normal"
+        "blood",
+        "test",
+        "report",
+        "lab",
+        "laboratory",
+        "specimen",
+        "reference",
+        "result",
+        "hemoglobin",
+        "wbc",
+        "rbc",
+        "platelet",
+        "glucose",
+        "cholesterol",
+        "creatinine",
+        "alt",
+        "ast",
+        "urine",
+        "panel",
+        "profile",
+        "patient",
+        "clinical",
+        "diagnostic",
+        "normal",
     ]
 
     text_lower = text.lower()

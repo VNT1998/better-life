@@ -1,10 +1,11 @@
-import uuid
 import logging
+import uuid
 from datetime import datetime
-from typing import List, Dict, Any, Optional
-from app.db.session import SessionLocal
+from typing import Any
+
 from app.db.models import AuditEventModel
-from app.schemas.clinical import AuditEventResponse, AuditEventCreate
+from app.db.session import SessionLocal
+from app.schemas.clinical import AuditEventResponse
 
 logger = logging.getLogger(__name__)
 
@@ -18,12 +19,12 @@ class AuditService:
     def log_event(
         self,
         event_type: str,
-        user_id: Optional[str] = None,
-        patient_id: Optional[str] = None,
-        execution_id: Optional[str] = None,
-        payload: Optional[Dict[str, Any]] = None,
+        user_id: str | None = None,
+        patient_id: str | None = None,
+        execution_id: str | None = None,
+        payload: dict[str, Any] | None = None,
         status: str = "SUCCESS",
-        db_session: Optional[Any] = None,
+        db_session: Any | None = None,
     ) -> AuditEventResponse:
         should_close = False
         db = db_session
@@ -77,11 +78,11 @@ class AuditService:
 
     def query_events(
         self,
-        patient_id: Optional[str] = None,
-        event_type: Optional[str] = None,
+        patient_id: str | None = None,
+        event_type: str | None = None,
         limit: int = 50,
-        db_session: Optional[Any] = None,
-    ) -> List[AuditEventResponse]:
+        db_session: Any | None = None,
+    ) -> list[AuditEventResponse]:
         should_close = False
         db = db_session
         if db is None:

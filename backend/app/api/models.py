@@ -1,17 +1,19 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends
-from typing import Dict, Any
+
 from app.api.deps import ai_service, auth_service, get_current_user
 from app.config import (
-    APP_NAME,
-    APP_TAGLINE,
+    ANALYSIS_DAILY_LIMIT,
     APP_DESCRIPTION,
     APP_ICON,
-    MAX_UPLOAD_SIZE_MB,
+    APP_NAME,
+    APP_TAGLINE,
     MAX_PDF_PAGES,
-    ANALYSIS_DAILY_LIMIT,
+    MAX_UPLOAD_SIZE_MB,
     OLLAMA_BASE_URL,
-    OLLAMA_PRIMARY_MODEL,
     OLLAMA_FALLBACK_MODELS,
+    OLLAMA_PRIMARY_MODEL,
 )
 
 router = APIRouter(tags=["config"])
@@ -29,7 +31,7 @@ async def get_models():
 
 
 @router.get("/config")
-def get_config(user: Dict[str, Any] = Depends(get_current_user)):
+def get_config(user: dict[str, Any] = Depends(get_current_user)):
     user_id = user.get("id", "default")
     remaining = ai_service.get_remaining_limit(user_id)
     return {

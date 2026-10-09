@@ -1,177 +1,165 @@
 # 🌱 BetterLife
 
-AI-powered health intelligence and laboratory blood report analysis with interactive clinical follow-up Q&A, built with **React (Vite)**, **FastAPI (uv)**, and self-hosted **Ollama**.
+[![CI Quality Gate](https://github.com/vinitkarkera/better-life/actions/workflows/ci.yml/badge.svg)](https://github.com/vinitkarkera/better-life/actions/workflows/ci.yml)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+[![React 19](https://img.shields.io/badge/react-19-61dafb.svg)](https://react.dev/)
+[![TypeScript Strict](https://img.shields.io/badge/typescript-strict-3178c6.svg)](https://www.typescriptlang.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+Production-grade Clinical Evidence Intelligence and Laboratory Blood Report Analysis Platform with interactive clinical follow-up Q&A, built with **React 19 + TypeScript (Vite)**, **FastAPI (Python 3.12 + uv)**, and self-hosted **Ollama** model inference.
 
 ---
 
 ## 🌟 Key Features
 
-- **Clinical Evidence Intelligence Platform (CEI)**:
-  - Multimodal document ingestion (PDF, Text, Images) with page segmentation and token/character provenance.
-  - Pydantic structured clinical extraction (`patient`, `observations`, `medications`, `conditions`, `lab_results`, `dates`, `confidence`).
-  - Longitudinal patient timeline modeling: biomarker trajectories (`rising`, `falling`, `stable`, `new`, `missing`) with delta and percentage shifts.
-  - Evidence-grounded Clinical Guideline RAG: pre-seeded authoritative standards from ADA, AHA/ACC, KDIGO, WHO, and ASH.
-  - Verifiable citation generation: claims linked to exact guideline excerpts, sections, pages, and recommendation grades.
-  - Deterministic safety architecture: programmatic blocks against prescription directives, definitive diagnostic claims, and irreversible decisions.
-  - Immutable audit trail logging all executions, model versions, and safety verdicts.
-  - Reference AI workload adapter for **Nuvorix**.
+- **Clinical Evidence Intelligence Engine (CEI)**:
+  - **Multimodal Ingestion**: PDF, image, and text ingestion with page segmentation, OCR fallback, and token-level provenance.
+  - **Structured Pydantic Extraction**: Extracts patient vitals, dates, lab observations, units, reference intervals, flags, and interpretations into typed schemas.
+  - **Longitudinal Biomarker Modeling**: Longitudinal trajectory tracking (`RISING`, `FALLING`, `STABLE`, `NEW`, `MISSING`) across historical patient visits with absolute and percentage shifts.
+  - **Evidence-Grounded Clinical RAG**: Vector-indexed authoritative standards from ADA, AHA/ACC, KDIGO, WHO, and ASH.
+  - **Deterministic Safety Guardrail**: Programmatic application-level filter blocking prescription generation, drug dosing, and definitive diagnosis claims before responses reach clients.
+  - **Real-Time Token Streaming**: Server-Sent Events (SSE) token-by-token streaming with immediate cancellation via `AbortController`.
+  - **Reference AI Workload**: Production adapter for **Nuvorix**.
 - **Automated Clinical Evaluation Harness**:
-  - Synthetic labeled benchmark cases with measured 100% precision/recall, 100% trend accuracy, and 100% safety violation detection.
-  - Pytest suite and CLI runner (`python run_evaluation.py`).
-- **Self-Hosted AI Models (Zero External Model APIs)**:
-  - Direct local/private inference via Ollama endpoint: `https://ollama.calmalpha.in/`.
-  - Supported models: `gemma4:e4b`, `phi4-mini:latest`, `granite4.1:3b`, `qwen3.5:4b-mlx`.
-  - Multi-tier automatic fallback cascade.
-- **Modern React Frontend (`frontend/`)**:
-  - Dual-mode workspace: **💬 Health Chat** (conversational analysis) & **🔬 Clinical Intelligence** (Timeline, Evidence Explorer, Document Viewer, Audit Trail).
-  - Scaffolded with Vite and styled with Tailwind CSS v4.
-- **Dedicated Backend Service (`backend/`)**:
-  - FastAPI application managed with `uv`.
-  - Unified database layer with SQLite (zero-config local) & PostgreSQL + `pgvector` (Docker/production).
-- **Docker Compose Deployment**:
-  - Full-stack composition: FastAPI, React (Nginx), PostgreSQL with `pgvector`, and Redis.
+  - Synthetic golden benchmark dataset measuring extraction precision/recall ($\ge 85\%$), longitudinal trend accuracy ($100\%$), and safety violation detection ($100\%$).
+- **Zero-Cloud AI Dependency**:
+  - Completely private inference via self-hosted Ollama (`https://ollama.calmalpha.in/`).
+  - Hierarchical model fallback cascade (`gemma4:e4b` $\to$ `phi4-mini` $\to$ `granite4.1:3b` $\to$ `qwen3.5:4b-mlx`).
+- **Production Monorepo Engineering**:
+  - Backend dependency locking with Astral [`uv`](https://docs.astral.sh/uv/) (`pyproject.toml` + `uv.lock`).
+  - Strict TypeScript configuration (`strict: true`) and ESLint flat config + Prettier formatting.
+  - Layered backend architecture, RFC 7807 structured error responses, and `X-Request-ID` telemetry middleware.
+  - Automated database migrations via Alembic (`backend/alembic/`).
+  - Hardened multi-stage Dockerfiles with non-root security users and unbuffered Nginx reverse proxies.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Architecture & Tech Stack
 
-- **Frontend**: React 19, Vite, Tailwind CSS v4, Lucide React, React Markdown
-- **Backend**: FastAPI, Uvicorn, Python 3.12+ (managed with `uv`)
-- **AI / LLM**: Self-hosted Ollama (`https://ollama.calmalpha.in/`)
-- **Database / Auth**: Supabase (PostgreSQL) / Gotrue with local dev fallback
-- **PDF Engine**: PDFPlumber, filetype
-
----
-
-## 🚀 Getting Started
-
-### 1. Requirements
-
-- Python 3.10+ and [`uv`](https://github.com/astral-sh/uv)
-- Node.js 18+ and `npm`
-
-### 2. Environment Setup
-
-Copy `.env.example` in `backend/` to `.env`:
-
-```bash
-cp backend/.env.example backend/.env
+```
+.
+├── backend/                  # FastAPI Application (Python 3.12, uv)
+│   ├── app/
+│   │   ├── api/              # Thin HTTP controllers (/api/v1 and /api)
+│   │   ├── core/             # pydantic-settings, errors, logging, telemetry
+│   │   ├── services/         # Orchestrator, safety, timeline, knowledge base
+│   │   ├── agents/           # Ollama client, extraction agent, chat agent
+│   │   ├── schemas/          # Clinical Pydantic schemas
+│   │   ├── db/               # SQLAlchemy models & Alembic migrations
+│   │   └── main.py           # Application entrypoint
+│   ├── tests/                # Unit (unit/) and Integration (integration/) tests
+│   ├── pyproject.toml        # Single source of truth for dependencies
+│   └── uv.lock               # Deterministic dependency lockfile
+├── frontend/                 # React 19 + TypeScript SPA (Vite)
+│   ├── src/
+│   │   ├── app/              # Shell, ErrorBoundary, TanStack Query providers
+│   │   ├── features/         # Feature-sliced domains (clinical, chat, auth, sessions)
+│   │   ├── components/       # Shared reusable UI
+│   │   ├── lib/              # Typed API client, Zod env validation
+│   │   └── test/             # Vitest & React Testing Library test suites
+│   ├── vite.config.ts        # Vite config with @/ path alias
+│   └── package.json
+├── docs/                     # Architecture guide & Architectural Decision Records
+├── .github/                  # CI workflow, Dependabot, PR & issue templates
+├── Makefile                  # Standardized build and quality gate targets
+└── docker-compose.yml        # PostgreSQL (pgvector), Redis, Backend, Frontend
 ```
 
-Environment variables:
+For detailed system design diagrams and rationale, see [Architecture Documentation](docs/architecture.md) and [ADR 0001: Self-Hosted Ollama](docs/adr/0001-self-hosted-ollama-rag.md).
+
+---
+
+## 🚀 Quickstart & Development
+
+### 1. Prerequisites
+- [Python 3.12+](https://www.python.org/)
+- [`uv`](https://docs.astral.sh/uv/) (Astral Python package manager)
+- [Node.js 20+](https://nodejs.org/) and `npm`
+- [Docker](https://www.docker.com/) (Optional, for PostgreSQL + pgvector)
+
+### 2. Installation
+Install all backend and frontend dependencies with one command:
+```bash
+make install
+```
+
+### 3. Environment Configuration
+Copy `.env.example` to `.env`:
+```bash
+cp .env.example .env
+```
+
+Key environment settings:
 ```env
+ENVIRONMENT=development
+SECRET_KEY=your-secure-random-secret-key-at-least-16-chars
 OLLAMA_BASE_URL=https://ollama.calmalpha.in/
 OLLAMA_PRIMARY_MODEL=gemma4:e4b
 OLLAMA_FALLBACK_MODELS=phi4-mini:latest,granite4.1:3b,qwen3.5:4b-mlx
-
-# Supabase Auth & Database (optional, falls back to local storage if omitted)
-SUPABASE_URL=your-supabase-url
-SUPABASE_KEY=your-supabase-key
+DATABASE_URL=sqlite:///./betterlife_platform.db
 ```
 
-### 3. Installation
+### 4. Running Locally
+Run the backend and frontend in separate terminals:
 
-**Backend** (using `uv`):
 ```bash
-cd backend
-uv venv
-uv pip install -r requirements.txt
-cd ..
+# Terminal 1: Backend API (http://localhost:8000)
+make dev-backend
+
+# Terminal 2: Frontend Web App (http://localhost:5173)
+make dev-frontend
 ```
 
-**Frontend** (using `npm`):
-```bash
-cd frontend
-npm install
-cd ..
-```
-
-### 4. Running the Development Servers
-
-Start the backend and frontend development servers:
-
-**Backend (FastAPI on http://localhost:8000)**:
-```bash
-npm run dev:backend
-# or: cd backend && uv run uvicorn app.main:app --reload --port 8000
-```
-
-**Frontend (Vite on http://localhost:5173)**:
-```bash
-npm run dev:frontend
-# or: cd frontend && npm run dev
-```
-
-Visit **`http://localhost:5173`** in your browser.
+Interactive OpenAPI Swagger documentation is available at:
+`http://localhost:8000/docs`
 
 ---
 
-### 5. (Optional) Full-Stack Production Mode
+## 🧪 Quality Gates & Verification
 
-Build the React frontend and serve both backend and frontend from FastAPI:
+Run the full quality gate verifying linting, formatting, static typing, unit/integration tests, and production builds:
+
 ```bash
-npm run build
-npm run start
+make check
 ```
-Visit **`http://localhost:8000`** in your browser.
+
+Individual target commands:
+| Command | Description |
+| ------- | ----------- |
+| `make lint` | Run Ruff on backend and ESLint on frontend |
+| `make format` | Automatically format code with Ruff and Prettier |
+| `make format-check` | Verify formatting without modifying files |
+| `make typecheck` | Run Mypy (strict) on backend and `tsc --noEmit` on frontend |
+| `make test` | Run Pytest with coverage on backend and Vitest on frontend |
+| `make build` | Compile optimized production frontend bundle |
+| `make audit` | Scan for package vulnerabilities (`pip-audit` & `npm audit`) |
 
 ---
 
-## 📁 Project Structure
+## 🐳 Docker Deployment
 
-```
-betterlife/
-├── backend/                    # Dedicated Python Backend Project
-│   ├── app/
-│   │   ├── api/                # API Routers
-│   │   │   ├── auth.py         # Authentication (sign in, sign up, session check)
-│   │   │   ├── sessions.py     # Chat sessions management
-│   │   │   ├── analysis.py     # PDF extraction & report analysis
-│   │   │   ├── chat.py         # Follow-up Q&A
-│   │   │   ├── models.py       # Ollama models list & configuration
-│   │   │   └── deps.py         # Auth & service dependencies
-│   │   ├── agents/
-│   │   │   ├── model_manager.py # Ollama client with multi-model fallback
-│   │   │   ├── analysis_agent.py # Medical analysis agent
-│   │   │   └── chat_agent.py   # RAG follow-up agent
-│   │   ├── auth/
-│   │   │   └── auth_service.py # Supabase auth & local in-memory fallback
-│   │   ├── services/
-│   │   │   └── ai_service.py   # AI service orchestrator
-│   │   ├── utils/
-│   │   │   ├── pdf_extractor.py # PDF text extraction
-│   │   │   └── validators.py   # Input & medical report validators
-│   │   ├── config.py           # Configuration & settings
-│   │   ├── prompts.py          # Clinical specialist prompts
-│   │   ├── sample_data.py      # Preloaded sample blood report
-│   │   └── main.py             # FastAPI entrypoint
-│   ├── requirements.txt        # Backend dependencies
-│   ├── pyproject.toml          # uv/hatchling project configuration
-│   └── README.md
-├── frontend/                   # React + Vite Frontend Project
-│   ├── src/
-│   │   ├── api/client.js       # REST API client
-│   │   ├── context/AuthContext.jsx # Auth state management
-│   │   ├── components/
-│   │   │   ├── Navbar.jsx      # Header, model selector, user status
-│   │   │   ├── Sidebar.jsx     # Session history, new session, limits
-│   │   │   ├── AnalysisForm.jsx # PDF upload / sample report form
-│   │   │   ├── ChatView.jsx    # Clinical findings, diagnosis, follow-up Q&A
-│   │   │   ├── WelcomeView.jsx # Welcome hero screen
-│   │   │   └── AuthModal.jsx   # Login & register modal
-│   │   ├── App.jsx             # Main application layout
-│   │   └── index.css           # Tailwind CSS styles
-│   ├── package.json
-│   └── vite.config.js          # Vite configuration with API proxy
-├── public/
-│   └── db/
-│       ├── script.sql          # Supabase database schema
-│       └── schema.png          # Database schema diagram
-├── package.json                # Root workflow scripts
-├── .env.example                # Example environment variables
-└── README.md
+To launch the full production composition (PostgreSQL with `pgvector`, Redis, FastAPI backend, and Nginx React frontend):
+
+```bash
+docker compose up --build -d
 ```
 
-## 🔒 Database Setup (Supabase)
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **Health Check**: http://localhost:8000/health
+- **Readiness Probe**: http://localhost:8000/ready
 
-If connecting to Supabase, run `public/db/script.sql` in your Supabase SQL Editor to initialize the `users`, `chat_sessions`, and `chat_messages` tables.
+---
+
+## 🔒 Security & Governance
+
+- See [SECURITY.md](SECURITY.md) for our security posture and vulnerability disclosure instructions.
+- See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).

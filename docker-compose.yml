@@ -9,9 +9,9 @@ services:
     container_name: betterlife-postgres
     restart: always
     environment:
-      POSTGRES_USER: betterlife
-      POSTGRES_PASSWORD: betterlife_secret_password
-      POSTGRES_DB: betterlife
+      POSTGRES_USER: ${POSTGRES_USER:-betterlife}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-betterlife_secret_password}
+      POSTGRES_DB: ${POSTGRES_DB:-betterlife}
     ports:
       - "5432:5432"
     volumes:
@@ -49,12 +49,13 @@ services:
     container_name: betterlife-backend
     restart: always
     environment:
-      - DATABASE_URL=postgresql://betterlife:betterlife_secret_password@postgres:5432/betterlife
-      - REDIS_URL=redis://redis:6379/0
-      - OLLAMA_BASE_URL=https://ollama.calmalpha.in/
-      - OLLAMA_PRIMARY_MODEL=gemma4:e4b
-      - OLLAMA_FALLBACK_MODELS=phi4-mini:latest,granite4.1:3b,qwen3.5:4b-mlx
-      - PORT=8000
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-betterlife}:${POSTGRES_PASSWORD:-betterlife_secret_password}@postgres:5432/${POSTGRES_DB:-betterlife}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-https://ollama.calmalpha.in/}
+      - OLLAMA_PRIMARY_MODEL=${OLLAMA_PRIMARY_MODEL:-gemma4:e4b}
+      - OLLAMA_FALLBACK_MODELS=${OLLAMA_FALLBACK_MODELS:-phi4-mini:latest,granite4.1:3b,qwen3.5:4b-mlx}
+      - SECRET_KEY=${SECRET_KEY:-betterlife-dev-secret-key-change-in-production}
+      - PORT=${PORT:-8000}
     ports:
       - "8000:8000"
     depends_on:

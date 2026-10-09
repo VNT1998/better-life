@@ -2,14 +2,16 @@
 Supabase Connection and Table Verification Script
 Run: uv run python check_supabase.py
 """
-import sys
+
 import httpx
-from app.config import SUPABASE_URL, SUPABASE_KEY
+
+from app.config import SUPABASE_KEY, SUPABASE_URL
+
 
 def check():
     print(f"Checking Supabase at: {SUPABASE_URL}")
     headers = {"apikey": SUPABASE_KEY}
-    
+
     # 1. Check root rest endpoint
     try:
         with httpx.Client(timeout=5.0) as client:
@@ -46,7 +48,10 @@ def check():
     if all_ok:
         print("\n🎉 SUCCESS: All required tables are present and queryable in Supabase!")
     else:
-        print("\n⚠️ ACTION REQUIRED: Run the SQL in 'backend/init_supabase.sql' in your Supabase SQL Editor.")
+        print(
+            "\n⚠️ ACTION REQUIRED: Run the SQL in 'backend/init_supabase.sql' in your Supabase SQL Editor."
+        )
+
 
 if __name__ == "__main__":
     check()

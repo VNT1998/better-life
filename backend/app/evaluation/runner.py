@@ -1,13 +1,12 @@
-import asyncio
 import logging
-from typing import Dict, Any, List
+from typing import Any
 
-from app.evaluation.dataset import SYNTHETIC_EVALUATION_DATASET
 from app.agents.extraction_agent import extraction_agent
-from app.services.timeline_service import timeline_service
+from app.evaluation.dataset import SYNTHETIC_EVALUATION_DATASET
+from app.schemas.clinical import EvidenceCitation, ObservationValue
 from app.services.knowledge_base_service import knowledge_base_service
 from app.services.safety_service import safety_service
-from app.schemas.clinical import ObservationValue, EvidenceCitation
+from app.services.timeline_service import timeline_service
 
 logger = logging.getLogger(__name__)
 
@@ -23,20 +22,32 @@ class BenchmarkRunner:
     - unsafe-output detection rate
     """
 
-    async def run_benchmark_async(self) -> Dict[str, Any]:
+    async def run_benchmark_async(self) -> dict[str, Any]:
         results = {
             "total_cases": len(SYNTHETIC_EVALUATION_DATASET),
-            "extraction": {"total": 0, "correct": 0, "exact_match": 0, "precision": 0.0, "recall": 0.0},
+            "extraction": {
+                "total": 0,
+                "correct": 0,
+                "exact_match": 0,
+                "precision": 0.0,
+                "recall": 0.0,
+            },
             "timeline": {"total": 0, "correct_trend": 0, "accuracy": 0.0},
             "safety": {"total": 0, "correct_verdicts": 0, "detection_rate": 0.0},
-            "grounding": {"citations_evaluated": 0, "grounded_citations": 0, "groundedness_score": 0.0},
+            "grounding": {
+                "citations_evaluated": 0,
+                "grounded_citations": 0,
+                "groundedness_score": 0.0,
+            },
             "hallucination_rate": 0.0,
             "passed_cases": 0,
             "failed_cases": 0,
         }
 
         # 1. Evaluate Extraction & Grounding Cases
-        extraction_cases = [c for c in SYNTHETIC_EVALUATION_DATASET if c["category"] == "extraction_and_grounding"]
+        extraction_cases = [
+            c for c in SYNTHETIC_EVALUATION_DATASET if c["category"] == "extraction_and_grounding"
+        ]
         extracted_total_fields = 0
         extracted_matched_fields = 0
         exact_matches = 0
@@ -70,7 +81,9 @@ class BenchmarkRunner:
                 exact_matches += 1
 
             # Test grounding
-            findings = knowledge_base_service.ground_observations_with_evidence(extraction_res.observations)
+            findings = knowledge_base_service.ground_observations_with_evidence(
+                extraction_res.observations
+            )
             for f in findings:
                 for c in f.citations:
                     results["grounding"]["citations_evaluated"] += 1
@@ -80,28 +93,38 @@ class BenchmarkRunner:
         results["extraction"]["total"] = extracted_total_fields
         results["extraction"]["correct"] = extracted_matched_fields
         results["extraction"]["exact_match"] = exact_matches
-        results["extraction"]["precision"] = round(extracted_matched_fields / max(extracted_total_fields, 1), 3)
-        results["extraction"]["recall"] = round(extracted_matched_fields / max(extracted_total_fields, 1), 3)
+        results["extraction"]["precision"] = round(
+            extracted_matched_fields / max(extracted_total_fields, 1), 3
+        )
+        results["extraction"]["recall"] = round(
+            extracted_matched_fields / max(extracted_total_fields, 1), 3
+        )
 
         # 2. Evaluate Longitudinal Timeline Cases
-        timeline_cases = [c for c in SYNTHETIC_EVALUATION_DATASET if c["category"] == "longitudinal_timeline"]
+        timeline_cases = [
+            c for c in SYNTHETIC_EVALUATION_DATASET if c["category"] == "longitudinal_timeline"
+        ]
         timeline_correct = 0
 
         for case in timeline_cases:
             flattened_obs = []
             for visit in case["history"]:
                 for obs in visit["observations"]:
-                    flattened_obs.append({
-                        "name": obs["name"],
-                        "value": str(obs["numeric_value"]),
-                        "numeric_value": obs["numeric_value"],
-                        "unit": obs["unit"],
-                        "category": "Laboratory",
-                        "flag": obs["flag"],
-                        "observation_date": visit["date"],
-                    })
+                    flattened_obs.append(
+                        {
+                            "name": obs["name"],
+                            "value": str(obs["numeric_value"]),
+                            "numeric_value": obs["numeric_value"],
+                            "unit": obs["unit"],
+                            "category": "Laboratory",
+                            "flag": obs["flag"],
+                            "observation_date": visit["date"],
+                        }
+                    )
 
-            tl_res = timeline_service.compute_timeline_from_observations(case["case_id"], flattened_obs)
+            tl_res = timeline_service.compute_timeline_from_observations(
+                case["case_id"], flattened_obs
+            )
             primary_name = case["history"][0]["observations"][0]["name"]
             detected_trend = tl_res.overall_trends.get(primary_name)
 
@@ -113,7 +136,9 @@ class BenchmarkRunner:
         results["timeline"]["accuracy"] = round(timeline_correct / max(len(timeline_cases), 1), 3)
 
         # 3. Evaluate Adversarial Safety Cases
-        safety_cases = [c for c in SYNTHETIC_EVALUATION_DATASET if c["category"] == "adversarial_safety"]
+        safety_cases = [
+            c for c in SYNTHETIC_EVALUATION_DATASET if c["category"] == "adversarial_safety"
+        ]
         safety_correct = 0
 
         dummy_obs = [
